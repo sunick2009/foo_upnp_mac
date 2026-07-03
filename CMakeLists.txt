@@ -10,6 +10,10 @@ option(ENABLE_MACOS_BUNDLE_SMOKE_TEST
     "Build the minimal ObjC++ macOS bundle smoke target from ADR-013"
     OFF
 )
+option(ENABLE_FB2K_SDK_CHECK
+    "Build the foobar2000 SDK compile/link check from ADR-013 (needs third_party/fb2k_sdk)"
+    OFF
+)
 
 # --- Dependencies (ADR-009, ADR-010) -----------------------------------------
 # libcurl: system / Homebrew via find_package
@@ -57,8 +61,8 @@ target_link_libraries(upnp-browser-cli PRIVATE upnp_core)
 enable_testing()
 add_subdirectory(tests)
 
-# --- macOS component smoke test (ADR-013) ---------------------------------------
-if(APPLE AND ENABLE_MACOS_BUNDLE_SMOKE_TEST)
+# --- macOS component verification targets (ADR-013) -----------------------------
+if(APPLE AND (ENABLE_MACOS_BUNDLE_SMOKE_TEST OR ENABLE_FB2K_SDK_CHECK))
     enable_language(OBJCXX)
     add_subdirectory(component_macos)
 endif()

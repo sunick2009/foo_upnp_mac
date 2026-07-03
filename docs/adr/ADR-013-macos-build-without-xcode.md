@@ -61,6 +61,13 @@ macOS component。但有兩個現實限制：
 5. Code signing：開發期用 ad-hoc（`codesign -s -`）；
    正式發佈的 Developer ID signing 延後到 M6 release 階段決策。
 
+## 驗證結果（2026-07-03）
+
+- 步驟 1（最小 ObjC++ bundle）：✅ 通過，見 `docs/17_macos_toolchain_smoke_test.md`。
+- 步驟 2（SDK 在 CMake + CLT 下編譯）：✅ 通過，SDK-2025-03-07 五個
+  target 全數編譯、link、ad-hoc codesign 成功，fallback 未觸發。
+  見 `docs/19_fb2k_sdk_cmake_check.md` 與 `component_macos/fb2k_sdk.cmake`。
+
 ## Fallback 條件
 
 若步驟 2 失敗（SDK 硬性依賴 Xcode 特有機制，例如：
