@@ -22,7 +22,7 @@ FetchContent_MakeAvailable(pugixml)
 
 # --- Core library --------------------------------------------------------------
 add_library(upnp_core
-    src/core/placeholder.cpp
+    src/core/upnp/UrlResolver.cpp
 )
 
 target_include_directories(upnp_core PUBLIC
