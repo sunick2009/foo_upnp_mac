@@ -40,13 +40,14 @@
 
 | Server | Version | Browse | Playback | Metadata | Album Art | Pagination | Notes |
 |---|---|---:|---:|---:|---:|---:|---|
-| foobar2000 UPnP Media Server (foo_upnp) | 0.99.49 | ✅ | unknown* | ✅ | ✅ (URL 取得) | ✅ | 見下方 quirks |
+| foobar2000 UPnP Media Server (foo_upnp) | 0.99.49 | ✅ | ✅* | ✅ | ✅ (URL 取得) | ✅ | 見下方 quirks |
 | MiniDLNA / ReadyMedia | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
 | Jellyfin DLNA | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
 | Plex DLNA | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
 
-\* Playback 為 unknown 因為尚未在 foobar2000 內播放；但 resource URL 經 HTTP HEAD
-驗證回傳 200 + `Accept-Ranges: bytes` + 正確 `Content-Type: audio/wav`，seek 前景樂觀。
+\* 2026-07-03 由 component（foo_dms_browser 0.1.0 in foobar2000 v2.25.8
+macOS）實測：browser 加入 playlist 後可直接播放。此前 CLI 階段已由
+HTTP HEAD 驗證 `Accept-Ranges: bytes` + 正確 `Content-Type`。
 
 ### foo_upnp 0.99.49 實測紀錄（2026-07-03）
 
