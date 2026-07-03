@@ -52,8 +52,11 @@ python3 tools/mock_upnp_server.py 8200
 ## 5. 錯誤情境（ADR-014）
 
 - [ ] Server 關機/拔線後展開節點 → 節點顯示「⚠️ 連線失敗…」，
-      fb2k console 有詳細記錄，**沒有** modal 彈窗。
-- [ ] 收合再展開失敗節點 → 重試。
+      fb2k console 有詳細記錄（含實際請求的 URL），**沒有** modal 彈窗。
+- [ ] 失敗後**不會自動重試**（console 不刷屏、不重複打 server）。
+- [ ] 雙擊錯誤列或右鍵「重新載入」→ 重試一次。
+- [ ] 在 Preferences 修正 URL 後切回瀏覽視窗 → 自動套用新清單，
+      不需重開視窗。
 - [ ] Preferences 填入非 UPnP 的 URL（如 https://example.com）→
       展開時顯示解析錯誤而非崩潰。
 - [ ] mock server 對不存在的 ObjectID 回 SOAP fault →

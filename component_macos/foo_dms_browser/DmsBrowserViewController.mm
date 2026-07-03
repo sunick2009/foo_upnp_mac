@@ -124,6 +124,32 @@ NSString* describeBrowseError() {
     [self reloadServerListSelecting:0];
 }
 
+- (void)viewDidAppear {
+    [super viewDidAppear];
+    // Pick up Preferences edits whenever the user comes back to this
+    // window — otherwise an already-open browser keeps browsing the
+    // old URL after the server list was fixed.
+    [[NSNotificationCenter defaultCenter]
+        addObserver:self
+           selector:@selector(onWindowBecameKey:)
+               name:NSWindowDidBecomeKeyNotification
+             object:self.view.window];
+}
+
+- (void)viewDidDisappear {
+    [super viewDidDisappear];
+    [[NSNotificationCenter defaultCenter]
+        removeObserver:self
+                  name:NSWindowDidBecomeKeyNotification
+                object:self.view.window];
+}
+
+- (void)onWindowBecameKey:(NSNotification*)notification {
+    if (dms::loadServers() != _servers) {
+        [self reloadServerListSelecting:[_serverPopup indexOfSelectedItem]];
+    }
+}
+
 #pragma mark - Server list
 
 - (void)reloadServerListSelecting:(NSInteger)index {
@@ -229,7 +255,7 @@ NSString* describeBrowseError() {
         node.state = DmsNodeStateFailed;
         node.children = [NSMutableArray arrayWithObject:
             [DmsTreeNode placeholderWithTitle:
-                [NSString stringWithFormat:@"⚠️ %@（收合後展開可重試）", errorText]]];
+                [NSString stringWithFormat:@"⚠️ %@（雙擊此列重試）", errorText]]];
         _statusLabel.stringValue = errorText;
     } else {
         node.state = DmsNodeStateLoaded;
@@ -298,7 +324,12 @@ NSString* describeBrowseError() {
 
 - (void)outlineViewItemWillExpand:(NSNotification*)notification {
     DmsTreeNode* node = notification.userInfo[@"NSObject"];
-    if (node.state == DmsNodeStateFailed) node.state = DmsNodeStateIdle;
+    // Only untouched nodes load here. A Failed node must NOT auto-retry:
+    // reloadItem re-fires willExpand on expanded items, so resetting
+    // Failed here creates an infinite fail-retry loop that hammers the
+    // server. Retry is explicit — double-click the error row or use the
+    // context menu.
+    if (node.state != DmsNodeStateIdle) return;
     [self loadChildrenOfNode:node];
 }
 
@@ -310,6 +341,15 @@ NSString* describeBrowseError() {
     if (node.kind == DmsNodeKindItem) {
         std::vector<upnp::UpnpObject> single{node.object};
         [self addObjects:std::move(single) sourceTitle:node.title];
+        return;
+    }
+    if (node.kind == DmsNodeKindPlaceholder) {
+        // Error row: explicit retry of the failed parent.
+        DmsTreeNode* parent = [_outlineView parentForItem:node];
+        if (parent != nil && parent.state == DmsNodeStateFailed) {
+            parent.state = DmsNodeStateIdle;
+            [self loadChildrenOfNode:parent];
+        }
     }
     // Container double-click: the default expand/collapse toggle applies.
 }
