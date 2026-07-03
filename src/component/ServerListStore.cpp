@@ -182,10 +182,22 @@ void appendJsonString(std::string& out, const std::string& value) {
 
 } // namespace
 
+std::string trimWhitespace(const std::string& value) {
+    const char* whitespace = " \t\r\n";
+    const auto begin = value.find_first_not_of(whitespace);
+    if (begin == std::string::npos) return {};
+    const auto end = value.find_last_not_of(whitespace);
+    return value.substr(begin, end - begin + 1);
+}
+
 std::vector<ServerEntry> parseServerList(const std::string& json) {
     std::vector<ServerEntry> entries;
     Parser parser(json);
     if (!parser.parse(entries)) return {};
+    for (auto& entry : entries) {
+        entry.name = trimWhitespace(entry.name);
+        entry.url = trimWhitespace(entry.url);
+    }
     return entries;
 }
 

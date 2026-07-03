@@ -61,6 +61,26 @@ TEST_CASE("malformed input yields an empty list", "[serverlist]") {
     CHECK(parseServerList(R"([{"name":"\ud800broken","url":"u"}])").empty());
 }
 
+TEST_CASE("trimWhitespace strips stray whitespace", "[serverlist]") {
+    using component::trimWhitespace;
+    CHECK(trimWhitespace("  http://h/desc.xml \n") == "http://h/desc.xml");
+    CHECK(trimWhitespace("\tname\r\n") == "name");
+    CHECK(trimWhitespace("no-op") == "no-op");
+    CHECK(trimWhitespace("   ").empty());
+    CHECK(trimWhitespace("").empty());
+    CHECK(trimWhitespace("inner space kept") == "inner space kept");
+}
+
+TEST_CASE("parse trims whitespace inside stored values", "[serverlist]") {
+    // Self-heal entries that were saved with stray whitespace before
+    // input sanitizing existed (the real-server 404 bug).
+    const auto parsed =
+        parseServerList(R"([{"name":" NAS ","url":"http://h/desc.xml\n"}])");
+    REQUIRE(parsed.size() == 1);
+    CHECK(parsed[0].name == "NAS");
+    CHECK(parsed[0].url == "http://h/desc.xml");
+}
+
 TEST_CASE("missing fields default to empty strings", "[serverlist]") {
     const auto parsed = parseServerList(R"([{"url":"http://only-url/"}])");
     REQUIRE(parsed.size() == 1);

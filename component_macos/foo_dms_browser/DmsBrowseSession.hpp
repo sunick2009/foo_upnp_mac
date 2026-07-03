@@ -39,6 +39,8 @@ public:
         return client_ ? client_->description().friendlyName : std::string{};
     }
 
+    const std::string& rootDescUrl() const { return rootDescUrl_; }
+
 private:
     std::string rootDescUrl_;
     upnp::HttpClient http_;

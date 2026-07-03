@@ -203,6 +203,12 @@ NSString* describeBrowseError() {
             result = session->fetchChildren(objectId);
         } catch (...) {
             errorText = describeBrowseError();
+            // Log the exact URL: a stray character in the configured
+            // address is invisible in the UI but obvious here.
+            FB2K_console_formatter()
+                << "DMS Browser: browse objectId=\"" << objectId.c_str()
+                << "\" failed, server=\"" << session->rootDescUrl().c_str()
+                << "\": " << errorText.UTF8String;
         }
         dispatch_async(dispatch_get_main_queue(), ^{
             [self applyBrowseResult:std::move(result)
@@ -224,8 +230,6 @@ NSString* describeBrowseError() {
         node.children = [NSMutableArray arrayWithObject:
             [DmsTreeNode placeholderWithTitle:
                 [NSString stringWithFormat:@"⚠️ %@（收合後展開可重試）", errorText]]];
-        FB2K_console_formatter()
-            << "DMS Browser: browse failed: " << errorText.UTF8String;
         _statusLabel.stringValue = errorText;
     } else {
         node.state = DmsNodeStateLoaded;

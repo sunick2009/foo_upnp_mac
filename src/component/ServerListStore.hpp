@@ -20,4 +20,9 @@ bool operator==(const ServerEntry& a, const ServerEntry& b);
 std::vector<ServerEntry> parseServerList(const std::string& json);
 std::string serializeServerList(const std::vector<ServerEntry>& entries);
 
+// Strips leading/trailing whitespace (space, tab, CR, LF). Pasted URLs
+// often carry stray whitespace and servers answer 404 for it; every
+// load/save path runs entries through this.
+std::string trimWhitespace(const std::string& value);
+
 } // namespace component

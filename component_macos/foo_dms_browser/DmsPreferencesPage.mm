@@ -4,12 +4,14 @@
 
 #import <Cocoa/Cocoa.h>
 
+#include <string>
 #include <vector>
 
 #include "DmsConfig.hpp"
 
 @interface DmsPreferencesViewController
-    : NSViewController <NSTableViewDataSource, NSTableViewDelegate>
+    : NSViewController <NSTableViewDataSource, NSTableViewDelegate,
+                        NSTextFieldDelegate>
 @end
 
 @implementation DmsPreferencesViewController {
@@ -67,6 +69,9 @@
                                                  constant:12],
         [scrollView.trailingAnchor constraintEqualToAnchor:view.trailingAnchor
                                                   constant:-12],
+        // The scroll view must absorb all spare height, or an empty
+        // table collapses and the buttons ride up into it.
+        [scrollView.heightAnchor constraintGreaterThanOrEqualToConstant:150],
         [_addRemove.topAnchor constraintEqualToAnchor:scrollView.bottomAnchor
                                              constant:8],
         [_addRemove.leadingAnchor constraintEqualToAnchor:view.leadingAnchor
@@ -75,8 +80,7 @@
         [hint.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:12],
         [hint.trailingAnchor constraintEqualToAnchor:view.trailingAnchor
                                             constant:-12],
-        [hint.bottomAnchor constraintLessThanOrEqualToAnchor:view.bottomAnchor
-                                                    constant:-12],
+        [hint.bottomAnchor constraintEqualToAnchor:view.bottomAnchor constant:-12],
     ]];
     self.view = view;
 }
@@ -121,8 +125,10 @@
         text.bordered = NO;
         text.drawsBackground = NO;
         text.editable = YES;
-        text.target = self;
-        text.action = @selector(onCellEdited:);
+        // Delegate, not target/action: action fires only on Enter, so
+        // clicking away would silently drop the edit (the cause of the
+        // "component browses a stale URL" bug).
+        text.delegate = self;
         text.translatesAutoresizingMaskIntoConstraints = NO;
         text.lineBreakMode = NSLineBreakByTruncatingTail;
         [cell addSubview:text];
@@ -141,14 +147,17 @@
     return cell;
 }
 
-- (void)onCellEdited:(NSTextField*)sender {
+- (void)controlTextDidEndEditing:(NSNotification*)notification {
+    NSTextField* sender = notification.object;
     const NSInteger row = [_tableView rowForView:sender];
     const NSInteger column = [_tableView columnForView:sender];
     if (row < 0 || row >= (NSInteger)_servers.size() || column < 0) return;
     auto& server = _servers[(size_t)row];
-    const std::string value = sender.stringValue.UTF8String ?: "";
+    const std::string value =
+        component::trimWhitespace(sender.stringValue.UTF8String ?: "");
     if (column == 0) server.name = value;
     else server.url = value;
+    sender.stringValue = [NSString stringWithUTF8String:value.c_str()] ?: @"";
     [self persist];
 }
 
