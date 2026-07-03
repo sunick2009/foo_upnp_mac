@@ -14,7 +14,7 @@ Media Server 的 device description URL，瀏覽 ContentDirectory，
 | M0 Project Bootstrap | ✅ 完成 |
 | M1 Phase 0 CLI PoC | ✅ 完成 — 已對真實 server 驗證 |
 | M2 Core Library | ✅ 完成 — clean API、fixture tests、mockable transport、CI |
-| M3 foobar2000 macOS MVP | 🔶 進行中 — SDK 編譯 + 真機載入驗證已通過，CI 已上線 |
+| M3 foobar2000 macOS MVP | 🔶 進行中 — component 功能完成，待手動驗收（docs/21） |
 
 Phase 0 CLI 已對 foobar2000 UPnP Media Server (foo_upnp 0.99.49) 完整驗證：
 root/child browse、BrowseMetadata、pagination、中日文 metadata、

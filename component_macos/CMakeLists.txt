@@ -28,7 +28,13 @@ endif()
 if(ENABLE_FB2K_COMPONENT)
     add_library(foo_dms_browser MODULE
         foo_dms_browser/ComponentEntry.mm
-        foo_dms_browser/SpikeMetadbHint.mm
+        foo_dms_browser/DmsBrowserViewController.mm
+        foo_dms_browser/DmsBrowserWindowController.mm
+        foo_dms_browser/DmsConfig.mm
+        foo_dms_browser/DmsPlaylistIntegration.mm
+        foo_dms_browser/DmsPreferencesPage.mm
+        foo_dms_browser/DmsTreeNode.mm
+        foo_dms_browser/MainMenuCommands.mm
     )
     set_target_properties(foo_dms_browser PROPERTIES
         BUNDLE TRUE
@@ -43,15 +49,8 @@ if(ENABLE_FB2K_COMPONENT)
     target_compile_definitions(foo_dms_browser PRIVATE
         "$<$<CONFIG:Debug>:DEBUG=1>"
     )
-    # Throwaway metadb-hint spike support (docs/20 step 1); remove with the spike.
-    set(FB2K_HINT_SPIKE_MARKER_FILE "" CACHE STRING
-        "If set, the metadb hint spike writes its result to this file")
-    if(FB2K_HINT_SPIKE_MARKER_FILE)
-        target_compile_definitions(foo_dms_browser PRIVATE
-            "FB2K_HINT_SPIKE_MARKER_FILE=\"${FB2K_HINT_SPIKE_MARKER_FILE}\""
-        )
-    endif()
     target_link_libraries(foo_dms_browser PRIVATE
+        upnp_adapter
         fb2k_component_client
         fb2k_sdk_helpers
         fb2k_sdk
