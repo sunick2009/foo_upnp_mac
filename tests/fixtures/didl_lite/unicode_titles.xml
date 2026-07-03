@@ -1,0 +1,18 @@
+<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">
+  <container id="c-zh" parentID="0" restricted="1" childCount="7">
+    <dc:title>華語流行</dc:title>
+    <upnp:class>object.container.genre.musicGenre</upnp:class>
+  </container>
+  <item id="track-301" parentID="c-zh" restricted="1">
+    <dc:title>月亮代表我的心 — 鄧麗君</dc:title>
+    <upnp:class>object.item.audioItem.musicTrack</upnp:class>
+    <upnp:artist>鄧麗君</upnp:artist>
+    <upnp:album>島國之情歌</upnp:album>
+    <res protocolInfo="http-get:*:audio/flac:*">http://server/media/%E6%9C%88%E4%BA%AE.flac</res>
+  </item>
+  <item id="track-302" parentID="c-zh" restricted="1">
+    <dc:title>Amp &amp; Volt &lt;Live&gt;</dc:title>
+    <upnp:class>object.item.audioItem.musicTrack</upnp:class>
+    <res protocolInfo="http-get:*:audio/mpeg:*">http://server/media/amp-volt.mp3</res>
+  </item>
+</DIDL-Lite>

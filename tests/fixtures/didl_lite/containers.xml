@@ -1,0 +1,10 @@
+<DIDL-Lite xmlns="urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:upnp="urn:schemas-upnp-org:metadata-1-0/upnp/">
+  <container id="music" parentID="0" restricted="1" childCount="120">
+    <dc:title>Music</dc:title>
+    <upnp:class>object.container.storageFolder</upnp:class>
+  </container>
+  <container id="music/albums" parentID="music" restricted="1" childCount="34">
+    <dc:title>Albums</dc:title>
+    <upnp:class>object.container.album.musicAlbum</upnp:class>
+  </container>
+</DIDL-Lite>
