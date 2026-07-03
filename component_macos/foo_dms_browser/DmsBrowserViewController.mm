@@ -38,7 +38,11 @@ NSString* describeBrowseError() {
             return [NSString stringWithFormat:@"連線失敗：%s", e.what()];
         return [NSString stringWithFormat:@"HTTP %d：%s", e.statusCode, e.what()];
     } catch (const upnp::XmlParseException& e) {
-        return [NSString stringWithFormat:@"回應無法解析：%s", e.what()];
+        // Typical cause: the URL answers but isn't a device description
+        // (e.g. a router or web server returning an HTML page).
+        return [NSString
+            stringWithFormat:@"回應無法解析（此 URL 可能不是 UPnP device "
+                             @"description）：%s", e.what()];
     } catch (const std::exception& e) {
         return [NSString stringWithFormat:@"%s", e.what()];
     } catch (...) {

@@ -1,6 +1,13 @@
 # DMS Browser 手動測試清單（M3 MVP）
 
 **版本：** foo_dms_browser 0.1.0
+
+> **驗收紀錄（2026-07-03/04，foobar2000 v2.25.8 + foo_upnp 0.99.49）**
+> 核心流程通過：真實 server 瀏覽 → 加入 playlist（metadata 預填）→
+> 播放。錯誤情境通過：失敗不自動重試；非 device description 的 URL
+> 顯示解析錯誤。Preferences 中文與持久化通過。
+> 過程中修復三個問題：prefs 編輯失焦不存檔、空清單版面擠壓、
+> 失敗節點無限重試（commit ff7137f、a2a00f4）。
 **前置：** component 已安裝（`~/Library/foobar2000-v2/user-components/
 foo_dms_browser.component`）並重啟 foobar2000。
 自動化已涵蓋的部分（adapter 邏輯、載入不崩潰）不在此清單。
