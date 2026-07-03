@@ -39,6 +39,7 @@ jobs:
           cmake -B build -DCMAKE_BUILD_TYPE=Debug
           -DENABLE_MACOS_BUNDLE_SMOKE_TEST=ON
           -DENABLE_FB2K_SDK_CHECK=ON
+          -DENABLE_FB2K_COMPONENT=ON
 
       - name: Build
         run: cmake --build build -j 3
@@ -46,10 +47,18 @@ jobs:
       - name: Test
         run: ctest --test-dir build --output-on-failure
 
-      - name: Ad-hoc codesign component bundle
+      - name: Ad-hoc codesign component bundles
         run: |
-          codesign -s - -f build/component_macos/foo_dms_sdk_check.component
-          codesign -dv build/component_macos/foo_dms_sdk_check.component
+          for bundle in foo_dms_sdk_check foo_dms_browser; do
+            codesign -s - -f "build/component_macos/${bundle}.component"
+            codesign -dv "build/component_macos/${bundle}.component"
+          done
+
+      - name: Upload component artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: foo_dms_browser-component
+          path: build/component_macos/foo_dms_browser.component
 
   linux:
     runs-on: ubuntu-latest
