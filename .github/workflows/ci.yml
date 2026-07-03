@@ -1,0 +1,71 @@
+# CI per ADR-013: the macOS job is the gate proving the component build
+# path (ObjC++ bundle + foobar2000 SDK under CMake, no .xcodeproj) stays
+# green. The Linux job mirrors .gitlab-ci.yml for the portable core.
+# The foobar2000 SDK is downloaded at build time — never committed.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  FB2K_SDK_ARCHIVE: SDK-2025-03-07.7z
+
+jobs:
+  macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache foobar2000 SDK
+        id: sdk-cache
+        uses: actions/cache@v4
+        with:
+          path: third_party/fb2k_sdk
+          key: fb2k-sdk-${{ env.FB2K_SDK_ARCHIVE }}
+
+      - name: Fetch foobar2000 SDK
+        if: steps.sdk-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p third_party/fb2k_sdk
+          cd third_party/fb2k_sdk
+          curl -sSLO "https://www.foobar2000.org/downloads/${FB2K_SDK_ARCHIVE}"
+          tar -xf "${FB2K_SDK_ARCHIVE}"
+
+      - name: Configure
+        run: >
+          cmake -B build -DCMAKE_BUILD_TYPE=Debug
+          -DENABLE_MACOS_BUNDLE_SMOKE_TEST=ON
+          -DENABLE_FB2K_SDK_CHECK=ON
+
+      - name: Build
+        run: cmake --build build -j 3
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+      - name: Ad-hoc codesign component bundle
+        run: |
+          codesign -s - -f build/component_macos/foo_dms_sdk_check.component
+          codesign -dv build/component_macos/foo_dms_sdk_check.component
+
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cmake libcurl4-openssl-dev python3
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Debug
+
+      - name: Build
+        run: cmake --build build -j "$(nproc)"
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
