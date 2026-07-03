@@ -54,6 +54,19 @@ target_link_libraries(upnp_core
     PRIVATE CURL::libcurl
 )
 
+# --- Component adapter layer (platform-neutral, ADR-015/016 + ADR-012 rev) ------
+add_library(upnp_adapter
+    src/component/BrowsePager.cpp
+    src/component/HintFields.cpp
+    src/component/ServerListStore.cpp
+)
+
+target_include_directories(upnp_adapter PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
+target_link_libraries(upnp_adapter PUBLIC upnp_core)
+
 # --- CLI -----------------------------------------------------------------------
 add_executable(upnp-browser-cli
     src/cli/main.cpp

@@ -8,6 +8,9 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(upnp_tests
     sanity_test.cpp
+    adapter/test_browse_pager.cpp
+    adapter/test_hint_fields.cpp
+    adapter/test_server_list_store.cpp
     http/test_http_client.cpp
     integration/test_content_directory_client.cpp
     model/test_upnp_object.cpp
@@ -19,8 +22,9 @@ add_executable(upnp_tests
     parser/test_url_resolver.cpp
 )
 
+# upnp_adapter publicly links (and re-exports headers of) upnp_core.
 target_link_libraries(upnp_tests PRIVATE
-    upnp_core
+    upnp_adapter
     Catch2::Catch2WithMain
 )
 
