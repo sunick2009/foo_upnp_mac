@@ -6,6 +6,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(ENABLE_MACOS_BUNDLE_SMOKE_TEST
+    "Build the minimal ObjC++ macOS bundle smoke target from ADR-013"
+    OFF
+)
+
 # --- Dependencies (ADR-009, ADR-010) -----------------------------------------
 # libcurl: system / Homebrew via find_package
 find_package(CURL REQUIRED)
@@ -51,3 +56,9 @@ target_link_libraries(upnp-browser-cli PRIVATE upnp_core)
 # --- Tests (ADR-011: Catch2 v3) --------------------------------------------------
 enable_testing()
 add_subdirectory(tests)
+
+# --- macOS component smoke test (ADR-013) ---------------------------------------
+if(APPLE AND ENABLE_MACOS_BUNDLE_SMOKE_TEST)
+    enable_language(OBJCXX)
+    add_subdirectory(component_macos)
+endif()

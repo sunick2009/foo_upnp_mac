@@ -1,4 +1,6 @@
 build/
+build-*/
+third_party/fb2k_sdk/
 .DS_Store
 *.user
 *.swp

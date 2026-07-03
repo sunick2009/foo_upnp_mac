@@ -2,6 +2,10 @@
 
 ## 導入時機
 
+本文件描述的是 M3 的功能範圍與模組切分。
+建置策略已由 `docs/adr/ADR-013-macos-build-without-xcode.md` 修正，
+因此這裡提到的 `.xcodeproj` 應視為歷史規劃，不再是預設路線。
+
 不要在 Phase 0 一開始就導入 foobar2000 SDK 或 Xcode project。
 
 應在以下條件成立後再導入：
@@ -37,7 +41,9 @@
 
 ```text
 component_macos/
-  foo_dms_browser_mac.xcodeproj
+  CMakeLists.txt
+  smoke/
+    Fb2kSmokeComponent.mm
   foo_dms_browser_mac/
     ComponentEntry.mm
     PreferencesPanel.mm
@@ -60,6 +66,6 @@ component_macos/
 ## 風險
 
 - macOS foobar2000 component 生態較小。
-- Xcode project 與 SDK 設定可能需要手動調整。
+- foobar2000 SDK 的編譯設定可能需要手動移植到 CMake。
 - UI lifecycle 與 thread safety 需要特別注意。
 - playlist item metadata 可能需要研究 foobar2000 SDK API。
