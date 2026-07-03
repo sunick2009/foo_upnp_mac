@@ -14,6 +14,10 @@ option(ENABLE_FB2K_SDK_CHECK
     "Build the foobar2000 SDK compile/link check from ADR-013 (needs third_party/fb2k_sdk)"
     OFF
 )
+option(ENABLE_FB2K_COMPONENT
+    "Build the foo_dms_browser component (needs third_party/fb2k_sdk)"
+    OFF
+)
 
 # --- Dependencies (ADR-009, ADR-010) -----------------------------------------
 # libcurl: system / Homebrew via find_package
@@ -62,7 +66,7 @@ enable_testing()
 add_subdirectory(tests)
 
 # --- macOS component verification targets (ADR-013) -----------------------------
-if(APPLE AND (ENABLE_MACOS_BUNDLE_SMOKE_TEST OR ENABLE_FB2K_SDK_CHECK))
+if(APPLE AND (ENABLE_MACOS_BUNDLE_SMOKE_TEST OR ENABLE_FB2K_SDK_CHECK OR ENABLE_FB2K_COMPONENT))
     enable_language(OBJCXX)
     add_subdirectory(component_macos)
 endif()

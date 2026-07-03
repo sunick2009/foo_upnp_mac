@@ -20,6 +20,43 @@ if(ENABLE_MACOS_BUNDLE_SMOKE_TEST)
     )
 endif()
 
-if(ENABLE_FB2K_SDK_CHECK)
+if(ENABLE_FB2K_SDK_CHECK OR ENABLE_FB2K_COMPONENT)
     include(fb2k_sdk.cmake)
+endif()
+
+# --- foo_dms_browser: the actual component (ADR-014..017, docs/20) -------------
+if(ENABLE_FB2K_COMPONENT)
+    add_library(foo_dms_browser MODULE
+        foo_dms_browser/ComponentEntry.mm
+        foo_dms_browser/SpikeMetadbHint.mm
+    )
+    set_target_properties(foo_dms_browser PROPERTIES
+        BUNDLE TRUE
+        BUNDLE_EXTENSION component
+        CXX_STANDARD 20
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS ON
+    )
+    target_compile_options(foo_dms_browser PRIVATE
+        "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>"
+    )
+    target_compile_definitions(foo_dms_browser PRIVATE
+        "$<$<CONFIG:Debug>:DEBUG=1>"
+    )
+    # Throwaway metadb-hint spike support (docs/20 step 1); remove with the spike.
+    set(FB2K_HINT_SPIKE_MARKER_FILE "" CACHE STRING
+        "If set, the metadb hint spike writes its result to this file")
+    if(FB2K_HINT_SPIKE_MARKER_FILE)
+        target_compile_definitions(foo_dms_browser PRIVATE
+            "FB2K_HINT_SPIKE_MARKER_FILE=\"${FB2K_HINT_SPIKE_MARKER_FILE}\""
+        )
+    endif()
+    target_link_libraries(foo_dms_browser PRIVATE
+        fb2k_component_client
+        fb2k_sdk_helpers
+        fb2k_sdk
+        fb2k_shared
+        fb2k_pfc
+        "-framework Cocoa"
+    )
 endif()
