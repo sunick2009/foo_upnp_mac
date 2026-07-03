@@ -9,6 +9,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(upnp_tests
     sanity_test.cpp
     model/test_upnp_object.cpp
+    parser/test_device_description_parser.cpp
     parser/test_url_resolver.cpp
 )
 
@@ -16,6 +17,8 @@ target_link_libraries(upnp_tests PRIVATE
     upnp_core
     Catch2::Catch2WithMain
 )
+
+target_include_directories(upnp_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 # Fixture files are read relative to this compile-time path (ADR-011)
 target_compile_definitions(upnp_tests PRIVATE

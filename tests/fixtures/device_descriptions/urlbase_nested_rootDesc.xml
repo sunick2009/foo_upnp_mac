@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<root xmlns="urn:schemas-upnp-org:device-1-0">
+  <specVersion>
+    <major>1</major>
+    <minor>0</minor>
+  </specVersion>
+  <URLBase>http://192.168.1.50:9000/</URLBase>
+  <device>
+    <deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType>
+    <friendlyName>Legacy Media Box</friendlyName>
+    <UDN>uuid:11111111-2222-3333-4444-555566667777</UDN>
+    <deviceList>
+      <device>
+        <deviceType>urn:schemas-upnp-org:device:MediaServer:1</deviceType>
+        <friendlyName>Embedded Library</friendlyName>
+        <UDN>uuid:88888888-9999-aaaa-bbbb-ccccddddeeee</UDN>
+        <serviceList>
+          <service>
+            <serviceType>urn:schemas-upnp-org:service:ContentDirectory:2</serviceType>
+            <serviceId>urn:upnp-org:serviceId:ContentDirectory</serviceId>
+            <controlURL>MediaServer/ContentDirectory/Control</controlURL>
+            <eventSubURL>MediaServer/ContentDirectory/Event</eventSubURL>
+            <SCPDURL>MediaServer/ContentDirectory/scpd.xml</SCPDURL>
+          </service>
+        </serviceList>
+      </device>
+    </deviceList>
+  </device>
+</root>
