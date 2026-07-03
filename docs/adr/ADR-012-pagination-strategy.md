@@ -78,15 +78,29 @@ upnp-browser-cli browse --server http://... --object-id 0 --count 100
 若 `requestedCount == 0`，讓 server 自行決定（有些 server 支援「返回全部」）。
 若 server 回傳的 `NumberReturned < requestedCount`，代表已是最後一頁。
 
-## Phase 1 延伸
+## Phase 1 延伸（已由 2026-07-03 修訂取代）
 
-Phase 1 component 的 Browser Panel 使用 lazy loading：
-- 初始顯示第一頁（或全部，若 container 夠小）。
-- 使用者滾到底部時，載入下一頁。
-- `ContentDirectoryClient` 的 `BrowseParams.startingIndex` 由 UI 管理。
+~~Phase 1 component 的 Browser Panel 使用 lazy loading~~ — 見下方修訂。
+
+## 修訂（2026-07-03，M3 grilling session）
+
+Component 的策略改為**展開節點時在背景執行緒迴圈翻頁抓到齊**
+（`startingIndex` 累加直到累計 `numberReturned >= totalMatches`），
+不做滾動 lazy loading：
+
+- 對齊 foo_upnp 行為：container 展開即呈現完整內容，使用者不會
+  誤以為曲目不見了。
+- 安全上限 10,000 項，超過即停止並在 UI 標示截斷；整個迴圈在
+  背景 thread（ADR-017），可因 UI 關閉而放棄。
+- 翻頁迴圈由 component 的 adapter 層實作（純 C++、可測），
+  `ContentDirectoryClient::browse()` 仍是單次呼叫、不自動翻頁。
+
+**CLI 行為不變**（單頁 + totalMatches 提示），本 ADR 的 Phase 0
+決策仍然有效。
 
 ## Consequences
 
 - `ContentDirectoryClient::browse()` 接受 `BrowseParams`，不自動翻頁。
 - CLI 的 `--starting-index` 和 `--count` 參數直接對應 SOAP Browse 的同名欄位。
-- Phase 1 的 lazy loading 需要 UI 維護每個 container 的 `startingIndex` 狀態。
+- Component 的翻頁迴圈（fetch-all with cap）是獨立的 adapter 函式，
+  以 fake client 注入測試多頁/截斷/短頁（NumberReturned < requested）情境。

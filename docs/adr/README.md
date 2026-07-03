@@ -20,3 +20,7 @@
 | [ADR-011](ADR-011-test-framework.md) | Test Framework 選擇 | Accepted |
 | [ADR-012](ADR-012-pagination-strategy.md) | Browse Pagination 策略 | Accepted |
 | [ADR-013](ADR-013-macos-build-without-xcode.md) | macOS Component Build — 不依賴完整 Xcode | Accepted |
+| [ADR-014](ADR-014-component-ui-architecture.md) | Component UI 形式與建構方式 | Accepted |
+| [ADR-015](ADR-015-server-list-persistence.md) | Server 清單持久化 | Accepted |
+| [ADR-016](ADR-016-playlist-integration.md) | Playlist 整合 — 加入語意與 metadata 預填 | Accepted |
+| [ADR-017](ADR-017-component-threading-model.md) | Component 執行緒模型 | Accepted |
