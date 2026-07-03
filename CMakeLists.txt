@@ -22,6 +22,7 @@ FetchContent_MakeAvailable(pugixml)
 
 # --- Core library --------------------------------------------------------------
 add_library(upnp_core
+    src/core/http/HttpClient.cpp
     src/core/upnp/DeviceDescriptionParser.cpp
     src/core/upnp/DidlLiteParser.cpp
     src/core/upnp/ResourceSelector.cpp
