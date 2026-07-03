@@ -8,6 +8,7 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(upnp_tests
     sanity_test.cpp
+    model/test_upnp_object.cpp
 )
 
 target_link_libraries(upnp_tests PRIVATE
