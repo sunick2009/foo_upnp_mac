@@ -10,6 +10,7 @@ add_executable(upnp_tests
     sanity_test.cpp
     model/test_upnp_object.cpp
     parser/test_device_description_parser.cpp
+    parser/test_soap_browse_request_builder.cpp
     parser/test_url_resolver.cpp
 )
 

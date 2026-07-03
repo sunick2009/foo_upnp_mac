@@ -23,6 +23,7 @@ FetchContent_MakeAvailable(pugixml)
 # --- Core library --------------------------------------------------------------
 add_library(upnp_core
     src/core/upnp/DeviceDescriptionParser.cpp
+    src/core/upnp/SoapBrowseRequestBuilder.cpp
     src/core/upnp/UrlResolver.cpp
 )
 
