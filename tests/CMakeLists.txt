@@ -34,3 +34,14 @@ target_compile_definitions(upnp_tests PRIVATE
 list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
 include(Catch)
 catch_discover_tests(upnp_tests)
+
+# End-to-end: CLI against the python mock server (requires python3)
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_FOUND)
+    add_test(NAME e2e_mock_server
+        COMMAND sh ${CMAKE_CURRENT_SOURCE_DIR}/e2e/run_e2e.sh
+                $<TARGET_FILE:upnp-browser-cli>
+                ${CMAKE_SOURCE_DIR}/tools/mock_upnp_server.py
+    )
+    set_tests_properties(e2e_mock_server PROPERTIES TIMEOUT 60)
+endif()
