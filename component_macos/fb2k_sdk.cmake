@@ -235,6 +235,15 @@ set_target_properties(foo_dms_sdk_check PROPERTIES
 target_compile_options(foo_dms_sdk_check PRIVATE
     "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>"
 )
+# Optional: path of a marker file the component writes on_init, so a
+# scripted load test can confirm it ran inside foobar2000.
+set(FB2K_SDK_CHECK_MARKER_FILE "" CACHE STRING
+    "If set, foo_dms_sdk_check writes this file when foobar2000 loads it")
+if(FB2K_SDK_CHECK_MARKER_FILE)
+    target_compile_definitions(foo_dms_sdk_check PRIVATE
+        "FB2K_SDK_CHECK_MARKER_FILE=\"${FB2K_SDK_CHECK_MARKER_FILE}\""
+    )
+endif()
 target_link_libraries(foo_dms_sdk_check PRIVATE
     fb2k_component_client
     fb2k_sdk_helpers

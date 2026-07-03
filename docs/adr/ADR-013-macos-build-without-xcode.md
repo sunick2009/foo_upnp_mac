@@ -67,6 +67,8 @@ macOS component。但有兩個現實限制：
 - 步驟 2（SDK 在 CMake + CLT 下編譯）：✅ 通過，SDK-2025-03-07 五個
   target 全數編譯、link、ad-hoc codesign 成功，fallback 未觸發。
   見 `docs/19_fb2k_sdk_cmake_check.md` 與 `component_macos/fb2k_sdk.cmake`。
+- Runtime 載入：✅ foobar2000 v2.25.8 (macOS) 成功載入 CMake + CLT
+  編譯、ad-hoc 簽章的 component 並執行 `initquit::on_init`。
 
 ## Fallback 條件
 

@@ -1,8 +1,9 @@
 # foobar2000 SDK CMake 編譯驗證（ADR-013 風險驗證點）
 
 **日期：** 2026-07-03
-**結論：✅ 通過** — foobar2000 SDK (SDK-2025-03-07) 可在 CMake + CLT
-（無完整 Xcode）下完整編譯並 link 成 loadable component bundle。
+**結論：✅ 通過（含 runtime 載入）** — foobar2000 SDK (SDK-2025-03-07)
+可在 CMake + CLT（無完整 Xcode）下完整編譯並 link 成 loadable
+component bundle，且真實的 foobar2000 v2.25.8 (macOS) 能載入並執行它。
 ADR-013 的 fallback 條件**沒有觸發**，Option B（CMake 全程）成立。
 
 ## 驗證了什麼
@@ -56,6 +57,11 @@ SDK 路徑可用 `-DFB2K_SDK_ROOT=/path/to/sdk` 覆寫。
   binary（`CMAKE_OSX_ARCHITECTURES=arm64;x86_64`）——留給 M6 packaging。
 - `foo_dms_sdk_check` 是拋棄式驗證 target；正式 component 會是
   獨立 target，link `upnp_core` + SDK libs。
-- **尚未驗證 runtime 載入**：bundle 能編譯 ≠ foobar2000 能載入。
-  下一步需要在本機 foobar2000 (macOS) 實測載入。
+- **Runtime 載入已驗證（2026-07-03）**：component 含一個 `initquit`
+  service，`on_init` 時寫 marker 檔（configure 時以
+  `-DFB2K_SDK_CHECK_MARKER_FILE=<path>` 指定）。把 ad-hoc 簽章後的
+  bundle 放到 `~/Library/foobar2000-v2/user-components/`（扁平放置，
+  執行檔以 `foo_*.component` glob 掃描），重啟 foobar2000 v2.25.8
+  後 marker 檔出現，內容含 fb2k 版本字串。載入後也可在
+  Preferences → Components 看到「DMS Browser SDK Check」。
 - SDK 授權見 `third_party/fb2k_sdk/sdk-license.txt`（隨 SDK 解壓取得）。
