@@ -34,6 +34,46 @@
 | MiniDLNA | TBD | ✅ | ✅ | ✅ | TBD | TBD | baseline |
 ```
 
+## 實測結果
+
+依 docs/09 原則：未實測的項目標記 unknown，不宣稱支援。
+
+| Server | Version | Browse | Playback | Metadata | Album Art | Pagination | Notes |
+|---|---|---:|---:|---:|---:|---:|---|
+| foobar2000 UPnP Media Server (foo_upnp) | 0.99.49 | ✅ | unknown* | ✅ | ✅ (URL 取得) | ✅ | 見下方 quirks |
+| MiniDLNA / ReadyMedia | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
+| Jellyfin DLNA | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
+| Plex DLNA | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
+
+\* Playback 為 unknown 因為尚未在 foobar2000 內播放；但 resource URL 經 HTTP HEAD
+驗證回傳 200 + `Accept-Ranges: bytes` + 正確 `Content-Type: audio/wav`，seek 前景樂觀。
+
+### foo_upnp 0.99.49 實測紀錄（2026-07-03）
+
+CLI 對 `http://10.102.0.10:2333/DeviceDescription.xml` 全部通過：
+
+- **root Browse**：3 個 container（播放列表 / 媒体库 / 播放流捕获）。
+- **child Browse**：多層瀏覽正常（`0/0` → 309 個 playlist container → audio items）。
+- **BrowseMetadata**：對單一 item 回傳完整 metadata。
+- **pagination**：`--starting-index 100 --requested-count 5` 正確回傳
+  `number_returned=5, total_matches=309`。
+- **中文 / 日文標題**：正常（server 本身是簡中介面，含大量日文專輯名）。
+- **albumArtURI**：absolute URL，直接可用。
+- **multiple res**：每個 item 3 個 res（LPCM ×2 + WAV 轉碼 profile）。
+  ResourceSelector 正確選 `audio/wav`（L16 不在優先清單 → fallback 規則生效）。
+- **HTTP Range**：resource URL 回傳 `Accept-Ranges: bytes`。
+
+### foo_upnp quirks（相容性差異）
+
+1. **Device description 路徑是 `/DeviceDescription.xml`**，不是 `rootDesc.xml`。
+   手動輸入 URL 時需知道正確路徑。
+2. **SOAP fault 用自訂 errorCode `404`（"File not found"）**，
+   而非 UPnP 標準的 `701 No such object`。錯誤處理不可 hardcode 701。
+3. **protocolInfo 的 contentFormat 可含參數**：
+   `audio/L16;rate=44100;channels=2`。mimeType 欄位會包含完整參數字串，
+   優先清單比對是 exact match，所以帶參數的 mime 走 fallback 路徑。
+4. ObjectID 格式為路徑狀（`0/0/58/0I`），非 flat ID。
+
 ## 跨網段說明
 
 MVP 使用手動 `rootDesc.xml` URL，因此不依賴 SSDP discovery。  
