@@ -14,7 +14,7 @@ Media Server 的 device description URL，瀏覽 ContentDirectory，
 | M0 Project Bootstrap | ✅ 完成 |
 | M1 Phase 0 CLI PoC | ✅ 完成 — 已對真實 server 驗證 |
 | M2 Core Library | ✅ 完成 — clean API、fixture tests、mockable transport、CI |
-| M3 foobar2000 macOS MVP | 🔶 進行中 — toolchain 與 SDK 編譯驗證已通過 |
+| M3 foobar2000 macOS MVP | 🔶 進行中 — SDK 編譯 + 真機載入驗證已通過，CI 已上線 |
 
 Phase 0 CLI 已對 foobar2000 UPnP Media Server (foo_upnp 0.99.49) 完整驗證：
 root/child browse、BrowseMetadata、pagination、中日文 metadata、
@@ -31,6 +31,10 @@ ctest --test-dir build --output-on-failure
 
 pugixml 與 Catch2 由 FetchContent 自動下載（首次 configure 需網路）。
 Linux 需要 `cmake libcurl4-openssl-dev python3`（見 `.gitlab-ci.yml`）。
+
+CI：GitHub Actions（`.github/workflows/ci.yml`）跑 macOS component
+build gate + Linux core build；自架 GitLab 另跑 `.gitlab-ci.yml` 的
+Linux pipeline。
 
 M3 的 macOS toolchain 驗證另有一個獨立 smoke test，見
 `docs/17_macos_toolchain_smoke_test.md`。它會在 `ENABLE_MACOS_BUNDLE_SMOKE_TEST=ON`
