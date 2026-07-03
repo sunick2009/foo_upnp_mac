@@ -1,0 +1,29 @@
+# Phase 0 CI: configure, build, test on Linux (docs/11).
+# The core library is platform-neutral; macOS-specific jobs arrive
+# with the component work in Phase 2.
+
+stages:
+  - build-test
+
+variables:
+  GIT_SUBMODULE_STRATEGY: none
+
+build-test:
+  stage: build-test
+  image: gcc:13
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq cmake libcurl4-openssl-dev python3
+  script:
+    - cmake -B build -DCMAKE_BUILD_TYPE=Debug
+    - cmake --build build -j "$(nproc)"
+    - ctest --test-dir build --output-on-failure
+  cache:
+    key: cmake-deps-$CI_COMMIT_REF_SLUG
+    paths:
+      - build/_deps/*-src
+  artifacts:
+    when: on_failure
+    paths:
+      - build/Testing/Temporary/LastTest.log
+    expire_in: 1 week
