@@ -9,6 +9,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(upnp_tests
     sanity_test.cpp
     http/test_http_client.cpp
+    integration/test_content_directory_client.cpp
     model/test_upnp_object.cpp
     parser/test_device_description_parser.cpp
     parser/test_didl_lite_parser.cpp
