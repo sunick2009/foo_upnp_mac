@@ -24,6 +24,7 @@ FetchContent_MakeAvailable(pugixml)
 add_library(upnp_core
     src/core/upnp/DeviceDescriptionParser.cpp
     src/core/upnp/DidlLiteParser.cpp
+    src/core/upnp/ResourceSelector.cpp
     src/core/upnp/SoapBrowseRequestBuilder.cpp
     src/core/upnp/SoapBrowseResponseParser.cpp
     src/core/upnp/UrlResolver.cpp

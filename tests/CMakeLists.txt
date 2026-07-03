@@ -11,6 +11,7 @@ add_executable(upnp_tests
     model/test_upnp_object.cpp
     parser/test_device_description_parser.cpp
     parser/test_didl_lite_parser.cpp
+    parser/test_resource_selector.cpp
     parser/test_soap_browse_request_builder.cpp
     parser/test_soap_browse_response_parser.cpp
     parser/test_url_resolver.cpp
