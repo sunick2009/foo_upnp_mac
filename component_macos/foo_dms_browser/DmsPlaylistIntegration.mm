@@ -7,17 +7,22 @@
 
 namespace dms {
 
-size_t addToActivePlaylist(const std::vector<upnp::UpnpObject>& objects) {
+AddToPlaylistResult addToActivePlaylist(
+    const std::vector<upnp::UpnpObject>& objects) {
     auto mdb = metadb::get();
     auto hints = metadb_hint_list::create();
     metadb_hint_list_v2::ptr hintsV2;
     hintsV2 &= hints; // verified available on fb2k mac (ADR-016 spike)
 
+    AddToPlaylistResult result;
     metadb_handle_list handles;
     for (const auto& object : objects) {
         if (object.type == upnp::UpnpObjectType::Container) continue;
         const auto resource = upnp::selectBestResource(object.resources);
-        if (!resource) continue;
+        if (!resource) {
+            ++result.skipped;
+            continue;
+        }
 
         metadb_handle_ptr handle = mdb->handle_create(resource->url.c_str(), 0);
 
@@ -32,9 +37,10 @@ size_t addToActivePlaylist(const std::vector<upnp::UpnpObject>& objects) {
         if (hintsV2.is_valid())
             hintsV2->add_hint_browse(handle, info, pfc::fileTimeNow());
         handles.add_item(handle);
+        ++result.added;
     }
 
-    if (handles.get_count() == 0) return 0;
+    if (handles.get_count() == 0) return result;
     if (hintsV2.is_valid()) hintsV2->on_done();
 
     auto plm = playlist_manager::get();
@@ -44,7 +50,7 @@ size_t addToActivePlaylist(const std::vector<upnp::UpnpObject>& objects) {
         plm->set_active_playlist(playlist);
     }
     plm->playlist_add_items(playlist, handles, bit_array_false());
-    return handles.get_count();
+    return result;
 }
 
 } // namespace dms

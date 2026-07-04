@@ -13,6 +13,7 @@
 #include "DmsBrowseSession.hpp"
 #include "DmsConfig.hpp"
 #include "DmsPlaylistIntegration.h"
+#include "upnp/ResourceSelector.hpp"
 #include "upnp/UpnpError.hpp"
 
 namespace {
@@ -53,6 +54,36 @@ NSString* describeBrowseError() {
     } catch (...) {
         return @"未知錯誤";
     }
+}
+
+NSString* describePlaybackResource(const upnp::UpnpObject& object) {
+    const auto resource = upnp::selectBestResource(object.resources);
+    if (!resource) return @"無可播放 HTTP resource";
+
+    NSMutableArray<NSString*>* parts = [NSMutableArray array];
+    if (!resource->mimeType.empty()) {
+        NSString* mime = [NSString stringWithUTF8String:resource->mimeType.c_str()];
+        if (mime.length > 0) [parts addObject:mime];
+    }
+    if (!resource->duration.empty()) {
+        NSString* duration =
+            [NSString stringWithUTF8String:resource->duration.c_str()];
+        if (duration.length > 0) [parts addObject:duration];
+    }
+    if (resource->sampleFrequency) {
+        [parts addObject:[NSString stringWithFormat:@"%u Hz",
+                          *resource->sampleFrequency]];
+    }
+    if (resource->bitsPerSample) {
+        [parts addObject:[NSString stringWithFormat:@"%u-bit",
+                          *resource->bitsPerSample]];
+    }
+    if (resource->nrAudioChannels) {
+        [parts addObject:[NSString stringWithFormat:@"%u ch",
+                          *resource->nrAudioChannels]];
+    }
+    return parts.count > 0 ? [parts componentsJoinedByString:@" / "]
+                           : @"HTTP resource";
 }
 
 struct RecursiveAddJob {
@@ -362,6 +393,7 @@ struct RecursiveCollectResult {
     }
     if (detailParts.count > 0)
         [lines addObject:[detailParts componentsJoinedByString:@" / "]];
+    [lines addObject:describePlaybackResource(object)];
     _selectionMetaLabel.stringValue = [lines componentsJoinedByString:@"\n"];
     _detailBar.hidden = NO;
 
@@ -630,28 +662,34 @@ struct RecursiveCollectResult {
         return;
     }
 
-    const size_t added = dms::addToActivePlaylist(result.objects);
-    if (added == 0) {
+    const dms::AddToPlaylistResult added = dms::addToActivePlaylist(result.objects);
+    if (added.added == 0) {
         _statusLabel.stringValue = [NSString
             stringWithFormat:@"「%@」沒有可播放的項目", rootTitle];
         return;
     }
     NSString* suffix = result.truncated ? @"（已達掃描上限）" : @"";
+    NSString* skipped = added.skipped > 0
+        ? [NSString stringWithFormat:@"，略過 %zu 個不可播放項目", added.skipped]
+        : @"";
     _statusLabel.stringValue = [NSString
-        stringWithFormat:@"已從「%@」遞迴加入 %zu 首%@",
-                         rootTitle, added, suffix];
+        stringWithFormat:@"已從「%@」遞迴加入 %zu 首%@%@",
+                         rootTitle, added.added, skipped, suffix];
 }
 
 - (void)addObjects:(std::vector<upnp::UpnpObject>)objects
        sourceTitle:(NSString*)title {
-    const size_t added = dms::addToActivePlaylist(objects);
-    if (added == 0) {
+    const dms::AddToPlaylistResult result = dms::addToActivePlaylist(objects);
+    if (result.added == 0) {
         _statusLabel.stringValue = [NSString
             stringWithFormat:@"「%@」沒有可播放的項目", title];
         return;
     }
-    _statusLabel.stringValue =
-        [NSString stringWithFormat:@"已加入 %zu 首到目前播放清單", added];
+    NSString* skipped = result.skipped > 0
+        ? [NSString stringWithFormat:@"，略過 %zu 個不可播放項目", result.skipped]
+        : @"";
+    _statusLabel.stringValue = [NSString
+        stringWithFormat:@"已加入 %zu 首到目前播放清單%@", result.added, skipped];
 }
 
 - (DmsTreeNode*)nodeAtRow:(NSInteger)row {

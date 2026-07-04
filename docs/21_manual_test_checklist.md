@@ -47,6 +47,9 @@ python3 tools/mock_upnp_server.py 8200
       展開期間可捲動、可切歌）。
 - [ ] 選取含 `albumArtURI` 的曲目後，browser 底部顯示 album art 縮圖與
       title/artist/album/date；快速切換曲目不會殘留上一張圖。
+- [ ] 選取曲目時，browser 底部顯示實際會播放的 resource 摘要
+      （MIME、duration、sample rate、bit depth、channels；欄位依 server
+      提供資料而定）。
 - [ ] 選取無 album art 的曲目或 container 後，album art 區域收合或清空。
 - [ ] Preferences 改了清單後，開下拉選單能看到更新。
 
@@ -61,6 +64,8 @@ python3 tools/mock_upnp_server.py 8200
       `channels`。
 - [ ] Container 右鍵「加入直接子項曲目」→ 其直接子項曲目
       全部加入（單層，子 container 不遞迴）。
+- [ ] 若加入範圍內存在沒有可播放 HTTP resource 的 item，狀態列顯示略過
+      數量。
 - [ ] Container 右鍵「遞迴加入所有曲目」→ 狀態列顯示已掃描資料夾數與
       已找到曲目數，完成後整棵子樹的曲目加入 playlist。
 - [ ] 遞迴加入進行中按「取消加入」→ 狀態列顯示取消，且不加入 partial
