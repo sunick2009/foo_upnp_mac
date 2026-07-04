@@ -5,7 +5,6 @@
 #import "DmsTreeNode.h"
 
 #include <atomic>
-#include <deque>
 #include <memory>
 #include <string>
 #include <vector>
@@ -13,6 +12,7 @@
 #include "DmsBrowseSession.hpp"
 #include "DmsConfig.hpp"
 #include "DmsPlaylistIntegration.h"
+#include "component/RecursiveBrowseCollector.hpp"
 #include "upnp/ResourceSelector.hpp"
 #include "upnp/UpnpError.hpp"
 
@@ -88,13 +88,6 @@ NSString* describePlaybackResource(const upnp::UpnpObject& object) {
 
 struct RecursiveAddJob {
     std::atomic_bool cancelled{false};
-};
-
-struct RecursiveCollectResult {
-    std::vector<upnp::UpnpObject> objects;
-    size_t containersVisited = 0;
-    bool cancelled = false;
-    bool truncated = false;
 };
 
 } // namespace
@@ -562,54 +555,30 @@ struct RecursiveCollectResult {
         [NSString stringWithFormat:@"正在遞迴掃描「%@」…", sourceTitle];
 
     dispatch_async(workerQueue(), ^{
-        RecursiveCollectResult result;
+        component::RecursiveBrowseResult result;
         NSString* errorText = nil;
         try {
-            std::deque<std::string> pending;
-            pending.push_back(rootObjectId);
-
-            while (!pending.empty() && !job->cancelled) {
-                if (result.containersVisited >= kMaxRecursiveContainers) {
-                    result.truncated = true;
-                    break;
-                }
-
-                const std::string objectId = pending.front();
-                pending.pop_front();
-                ++result.containersVisited;
-
-                component::PagedBrowseResult page = session->fetchChildren(objectId);
-                if (page.truncated) result.truncated = true;
-
-                for (const auto& object : page.objects) {
-                    if (job->cancelled) break;
-                    if (object.type == upnp::UpnpObjectType::Container) {
-                        pending.push_back(object.id);
-                    } else if (object.type == upnp::UpnpObjectType::AudioItem) {
-                        if (result.objects.size() >= kMaxRecursiveTracks) {
-                            result.truncated = true;
-                            break;
-                        }
-                        result.objects.push_back(object);
-                    }
-                }
-
-                const size_t containersVisited = result.containersVisited;
-                const size_t tracksFound = result.objects.size();
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    if (generation != _generation || _recursiveAddJob != job) return;
-                    _statusLabel.stringValue = [NSString
-                        stringWithFormat:@"正在遞迴掃描「%@」：%zu 個資料夾，%zu 首",
-                                         sourceTitle, containersVisited, tracksFound];
+            result = component::collectRecursiveChildren(
+                [session](const std::string& objectId) {
+                    return session->fetchChildren(objectId);
+                },
+                rootObjectId,
+                component::RecursiveBrowseOptions{
+                    .maxTracks = kMaxRecursiveTracks,
+                    .maxContainers = kMaxRecursiveContainers,
+                },
+                [job] { return job->cancelled.load(); },
+                [=](component::RecursiveBrowseProgress progress) {
+                    const size_t containersVisited = progress.containersVisited;
+                    const size_t tracksFound = progress.tracksFound;
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        if (generation != _generation || _recursiveAddJob != job) return;
+                        _statusLabel.stringValue = [NSString
+                            stringWithFormat:
+                                @"正在遞迴掃描「%@」：%zu 個資料夾，%zu 首",
+                                sourceTitle, containersVisited, tracksFound];
+                    });
                 });
-
-                if (result.truncated &&
-                    (result.objects.size() >= kMaxRecursiveTracks ||
-                     result.containersVisited >= kMaxRecursiveContainers)) {
-                    break;
-                }
-            }
-            result.cancelled = job->cancelled;
         } catch (...) {
             errorText = describeBrowseError();
             FB2K_console_formatter()
@@ -643,7 +612,7 @@ struct RecursiveCollectResult {
     [self loadChildrenOfNode:node];
 }
 
-- (void)finishRecursiveAdd:(RecursiveCollectResult)result
+- (void)finishRecursiveAdd:(component::RecursiveBrowseResult)result
                       root:(NSString*)rootTitle
                      error:(NSString*)errorText
                 generation:(NSInteger)generation

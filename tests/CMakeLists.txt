@@ -10,6 +10,7 @@ add_executable(upnp_tests
     sanity_test.cpp
     adapter/test_browse_pager.cpp
     adapter/test_hint_fields.cpp
+    adapter/test_recursive_browse_collector.cpp
     adapter/test_server_list_store.cpp
     http/test_http_client.cpp
     integration/test_content_directory_client.cpp

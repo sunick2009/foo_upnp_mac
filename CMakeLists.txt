@@ -58,6 +58,7 @@ target_link_libraries(upnp_core
 add_library(upnp_adapter
     src/component/BrowsePager.cpp
     src/component/HintFields.cpp
+    src/component/RecursiveBrowseCollector.cpp
     src/component/ServerListStore.cpp
 )
 
