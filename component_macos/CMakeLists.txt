@@ -28,6 +28,7 @@ endif()
 if(ENABLE_FB2K_COMPONENT)
     add_library(foo_dms_browser MODULE
         foo_dms_browser/ComponentEntry.mm
+        foo_dms_browser/DmsBrowserUiElement.mm
         foo_dms_browser/DmsBrowserViewController.mm
         foo_dms_browser/DmsBrowserWindowController.mm
         foo_dms_browser/DmsConfig.mm

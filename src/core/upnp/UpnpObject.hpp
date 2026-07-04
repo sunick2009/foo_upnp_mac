@@ -23,6 +23,14 @@ struct UpnpResource {
     std::string duration;
     std::optional<uint64_t> size;
     std::optional<uint32_t> bitrate;
+    std::optional<uint32_t> bitsPerSample;
+    std::optional<uint32_t> sampleFrequency;
+    std::optional<uint32_t> nrAudioChannels;
+};
+
+struct UpnpArtist {
+    std::string name;
+    std::optional<std::string> role;
 };
 
 // One DIDL-Lite <container> or <item> (ADR-001).
@@ -39,8 +47,16 @@ struct UpnpObject {
 
     // Item fields (valid only when type == AudioItem or Unknown)
     std::optional<std::string> artist;
+    std::vector<UpnpArtist> artists;
+    std::optional<std::string> albumArtist;
     std::optional<std::string> album;
     std::optional<std::string> genre;
+    std::optional<std::string> creator;
+    std::optional<std::string> date;
+    std::optional<std::string> originalTrackNumber;
+    std::optional<std::string> discNumber;
+    std::optional<std::string> totalDiscs;
+    std::optional<std::string> longDescription;
     std::optional<std::string> albumArtUri;
     std::vector<UpnpResource> resources;
 };

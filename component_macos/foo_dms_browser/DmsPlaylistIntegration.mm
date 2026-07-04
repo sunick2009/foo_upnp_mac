@@ -21,10 +21,12 @@ size_t addToActivePlaylist(const std::vector<upnp::UpnpObject>& objects) {
 
         metadb_handle_ptr handle = mdb->handle_create(resource->url.c_str(), 0);
 
-        const auto hint = component::hintFieldsFor(object, resource->duration);
+        const auto hint = component::hintFieldsFor(object, *resource);
         file_info_impl info;
         for (const auto& [field, value] : hint.meta)
             info.meta_set(field.c_str(), value.c_str());
+        for (const auto& [field, value] : hint.info)
+            info.info_set(field.c_str(), value.c_str());
         if (hint.lengthSeconds) info.set_length(*hint.lengthSeconds);
 
         if (hintsV2.is_valid())

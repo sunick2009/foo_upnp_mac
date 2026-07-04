@@ -13,6 +13,7 @@ namespace component {
 // meta pairs use fb2k field names ("title", "artist", ...).
 struct HintData {
     std::vector<std::pair<std::string, std::string>> meta;
+    std::vector<std::pair<std::string, std::string>> info;
     std::optional<double> lengthSeconds;
 };
 
@@ -20,6 +21,8 @@ struct HintData {
 // string of the resource actually being added ("H:MM:SS[.mmm]").
 HintData hintFieldsFor(const upnp::UpnpObject& object,
                        const std::string& resourceDuration);
+HintData hintFieldsFor(const upnp::UpnpObject& object,
+                       const upnp::UpnpResource& resource);
 
 // Parses a DIDL duration ("1:02:03", "02:03", "0:00:30.500") into
 // seconds; nullopt when empty or malformed.

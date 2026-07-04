@@ -139,6 +139,15 @@ void printResourceJson(std::ostream& out, const upnp::UpnpResource& res,
     if (res.bitrate) {
         out << ",\n" << indent << "  \"bitrate\": " << *res.bitrate;
     }
+    if (res.bitsPerSample) {
+        out << ",\n" << indent << "  \"bits_per_sample\": " << *res.bitsPerSample;
+    }
+    if (res.sampleFrequency) {
+        out << ",\n" << indent << "  \"sample_frequency\": " << *res.sampleFrequency;
+    }
+    if (res.nrAudioChannels) {
+        out << ",\n" << indent << "  \"audio_channels\": " << *res.nrAudioChannels;
+    }
     out << "\n" << indent << "}";
 }
 
@@ -171,8 +180,40 @@ void printJson(const CliOptions& opts, const upnp::ContentDirectoryClient& clien
             }
         } else {
             if (obj.artist) out << ",\n      \"artist\": " << jsonString(*obj.artist);
+            if (!obj.artists.empty()) {
+                out << ",\n      \"artists\": [\n";
+                for (size_t a = 0; a < obj.artists.size(); ++a) {
+                    out << "        {\n";
+                    out << "          \"name\": " << jsonString(obj.artists[a].name);
+                    if (obj.artists[a].role) {
+                        out << ",\n          \"role\": " << jsonString(*obj.artists[a].role);
+                    }
+                    out << "\n        }";
+                    if (a + 1 < obj.artists.size()) out << ",";
+                    out << "\n";
+                }
+                out << "      ]";
+            }
+            if (obj.albumArtist) {
+                out << ",\n      \"album_artist\": " << jsonString(*obj.albumArtist);
+            }
             if (obj.album) out << ",\n      \"album\": " << jsonString(*obj.album);
             if (obj.genre) out << ",\n      \"genre\": " << jsonString(*obj.genre);
+            if (obj.creator) out << ",\n      \"creator\": " << jsonString(*obj.creator);
+            if (obj.date) out << ",\n      \"date\": " << jsonString(*obj.date);
+            if (obj.originalTrackNumber) {
+                out << ",\n      \"original_track_number\": "
+                    << jsonString(*obj.originalTrackNumber);
+            }
+            if (obj.discNumber) {
+                out << ",\n      \"disc_number\": " << jsonString(*obj.discNumber);
+            }
+            if (obj.totalDiscs) {
+                out << ",\n      \"total_discs\": " << jsonString(*obj.totalDiscs);
+            }
+            if (obj.longDescription) {
+                out << ",\n      \"long_description\": " << jsonString(*obj.longDescription);
+            }
             if (obj.albumArtUri) {
                 out << ",\n      \"album_art_uri\": " << jsonString(*obj.albumArtUri);
             }

@@ -4,6 +4,8 @@
 
 #import "DmsTreeNode.h"
 
+#include <atomic>
+#include <deque>
 #include <memory>
 #include <string>
 #include <vector>
@@ -14,6 +16,9 @@
 #include "upnp/UpnpError.hpp"
 
 namespace {
+
+constexpr size_t kMaxRecursiveTracks = 10000;
+constexpr size_t kMaxRecursiveContainers = 10000;
 
 // Single serial queue for all blocking network work (ADR-017): browses
 // never run concurrently, so one HttpClient per session is safe.
@@ -50,6 +55,17 @@ NSString* describeBrowseError() {
     }
 }
 
+struct RecursiveAddJob {
+    std::atomic_bool cancelled{false};
+};
+
+struct RecursiveCollectResult {
+    std::vector<upnp::UpnpObject> objects;
+    size_t containersVisited = 0;
+    bool cancelled = false;
+    bool truncated = false;
+};
+
 } // namespace
 
 @interface DmsBrowserViewController () <NSOutlineViewDataSource,
@@ -58,13 +74,19 @@ NSString* describeBrowseError() {
 
 @implementation DmsBrowserViewController {
     NSPopUpButton* _serverPopup;
+    NSButton* _cancelAddButton;
     NSOutlineView* _outlineView;
+    NSStackView* _detailBar;
+    NSImageView* _albumArtView;
+    NSTextField* _selectionMetaLabel;
     NSTextField* _statusLabel;
     DmsTreeNode* _rootNode; // nil until a server is selected
 
     std::shared_ptr<dms::BrowseSession> _session;
+    std::shared_ptr<RecursiveAddJob> _recursiveAddJob;
     std::vector<component::ServerEntry> _servers;
     NSInteger _generation; // bumped on server switch; stale results dropped
+    NSInteger _artGeneration;
 }
 
 - (void)loadView {
@@ -74,6 +96,12 @@ NSString* describeBrowseError() {
     _serverPopup.target = self;
     _serverPopup.action = @selector(onServerSelected:);
     _serverPopup.menu.delegate = self;
+
+    _cancelAddButton = [NSButton buttonWithTitle:@"取消加入"
+                                          target:self
+                                          action:@selector(onCancelRecursiveAdd:)];
+    _cancelAddButton.bezelStyle = NSBezelStyleRounded;
+    _cancelAddButton.hidden = YES;
 
     _statusLabel = [NSTextField labelWithString:@""];
     _statusLabel.font = [NSFont systemFontOfSize:[NSFont smallSystemFontSize]];
@@ -99,29 +127,44 @@ NSString* describeBrowseError() {
     scrollView.documentView = _outlineView;
     scrollView.hasVerticalScroller = YES;
 
-    NSStackView* topBar = [NSStackView stackViewWithViews:@[ _serverPopup ]];
-    topBar.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    _albumArtView = [[NSImageView alloc] initWithFrame:NSZeroRect];
+    _albumArtView.imageScaling = NSImageScaleProportionallyUpOrDown;
+    _albumArtView.imageAlignment = NSImageAlignCenter;
+    _albumArtView.translatesAutoresizingMaskIntoConstraints = NO;
+    [_albumArtView.widthAnchor constraintEqualToConstant:96].active = YES;
+    [_albumArtView.heightAnchor constraintEqualToConstant:96].active = YES;
 
-    for (NSView* subview in @[ topBar, scrollView, _statusLabel ]) {
-        subview.translatesAutoresizingMaskIntoConstraints = NO;
-        [view addSubview:subview];
-    }
+    _selectionMetaLabel = [NSTextField wrappingLabelWithString:@""];
+    _selectionMetaLabel.font =
+        [NSFont systemFontOfSize:[NSFont smallSystemFontSize]];
+    _selectionMetaLabel.textColor = [NSColor secondaryLabelColor];
+    _selectionMetaLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+
+    _detailBar =
+        [NSStackView stackViewWithViews:@[ _albumArtView, _selectionMetaLabel ]];
+    _detailBar.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    _detailBar.alignment = NSLayoutAttributeTop;
+    _detailBar.spacing = 8;
+    _detailBar.hidden = YES;
+
+    NSStackView* topBar =
+        [NSStackView stackViewWithViews:@[ _serverPopup, _cancelAddButton ]];
+    topBar.orientation = NSUserInterfaceLayoutOrientationHorizontal;
+    topBar.spacing = 8;
+
+    NSStackView* mainStack =
+        [NSStackView stackViewWithViews:@[ topBar, scrollView, _detailBar, _statusLabel ]];
+    mainStack.orientation = NSUserInterfaceLayoutOrientationVertical;
+    mainStack.spacing = 6;
+    mainStack.edgeInsets = NSEdgeInsetsMake(8, 8, 6, 8);
+    mainStack.translatesAutoresizingMaskIntoConstraints = NO;
+    [view addSubview:mainStack];
     [NSLayoutConstraint activateConstraints:@[
-        [topBar.topAnchor constraintEqualToAnchor:view.topAnchor constant:8],
-        [topBar.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:8],
-        [topBar.trailingAnchor constraintLessThanOrEqualToAnchor:view.trailingAnchor
-                                                        constant:-8],
-        [scrollView.topAnchor constraintEqualToAnchor:topBar.bottomAnchor constant:8],
-        [scrollView.leadingAnchor constraintEqualToAnchor:view.leadingAnchor],
-        [scrollView.trailingAnchor constraintEqualToAnchor:view.trailingAnchor],
-        [_statusLabel.topAnchor constraintEqualToAnchor:scrollView.bottomAnchor
-                                               constant:4],
-        [_statusLabel.leadingAnchor constraintEqualToAnchor:view.leadingAnchor
-                                                   constant:8],
-        [_statusLabel.trailingAnchor constraintEqualToAnchor:view.trailingAnchor
-                                                    constant:-8],
-        [_statusLabel.bottomAnchor constraintEqualToAnchor:view.bottomAnchor
-                                                  constant:-6],
+        [mainStack.topAnchor constraintEqualToAnchor:view.topAnchor],
+        [mainStack.leadingAnchor constraintEqualToAnchor:view.leadingAnchor],
+        [mainStack.trailingAnchor constraintEqualToAnchor:view.trailingAnchor],
+        [mainStack.bottomAnchor constraintEqualToAnchor:view.bottomAnchor],
+        [scrollView.heightAnchor constraintGreaterThanOrEqualToConstant:180],
     ]];
 
     self.view = view;
@@ -173,6 +216,7 @@ NSString* describeBrowseError() {
             @"尚未設定伺服器 — Preferences → Tools → DMS Browser 新增";
         _rootNode = nil;
         _session.reset();
+        [self clearSelectionDetails];
         ++_generation;
         [_outlineView reloadData];
         return;
@@ -202,11 +246,15 @@ NSString* describeBrowseError() {
     if (index < 0 || index >= (NSInteger)_servers.size()) return;
     const auto& server = _servers[(size_t)index];
     _session = std::make_shared<dms::BrowseSession>(server.url);
+    if (_recursiveAddJob) _recursiveAddJob->cancelled = true;
+    _recursiveAddJob.reset();
+    _cancelAddButton.hidden = YES;
     ++_generation;
     NSString* name = [NSString stringWithUTF8String:server.name.c_str()];
     if (name.length == 0)
         name = [NSString stringWithUTF8String:server.url.c_str()] ?: @"Server";
     _rootNode = [DmsTreeNode rootNodeNamed:name];
+    [self clearSelectionDetails];
     [_outlineView reloadData];
     _statusLabel.stringValue = @"";
     [_outlineView expandItem:_rootNode];
@@ -277,6 +325,68 @@ NSString* describeBrowseError() {
     }
     [_outlineView reloadItem:node reloadChildren:YES];
     if (errorText == nil) [_outlineView expandItem:node];
+}
+
+#pragma mark - Album art / selection details
+
+- (void)clearSelectionDetails {
+    ++_artGeneration;
+    _albumArtView.image = nil;
+    _selectionMetaLabel.stringValue = @"";
+    _detailBar.hidden = YES;
+}
+
+- (void)outlineViewSelectionDidChange:(NSNotification*)notification {
+    (void)notification;
+    DmsTreeNode* node = [self nodeAtRow:_outlineView.selectedRow];
+    if (node == nil || node.kind != DmsNodeKindItem) {
+        [self clearSelectionDetails];
+        return;
+    }
+
+    const upnp::UpnpObject object = node.object;
+    NSMutableArray<NSString*>* lines = [NSMutableArray array];
+    [lines addObject:node.title ?: @""];
+    NSString* artist = object.artist
+        ? [NSString stringWithUTF8String:object.artist->c_str()]
+        : nil;
+    NSString* album = object.album
+        ? [NSString stringWithUTF8String:object.album->c_str()]
+        : nil;
+    NSMutableArray<NSString*>* detailParts = [NSMutableArray array];
+    if (artist.length > 0) [detailParts addObject:artist];
+    if (album.length > 0) [detailParts addObject:album];
+    if (object.date && !object.date->empty()) {
+        NSString* date = [NSString stringWithUTF8String:object.date->c_str()];
+        if (date.length > 0) [detailParts addObject:date];
+    }
+    if (detailParts.count > 0)
+        [lines addObject:[detailParts componentsJoinedByString:@" / "]];
+    _selectionMetaLabel.stringValue = [lines componentsJoinedByString:@"\n"];
+    _detailBar.hidden = NO;
+
+    ++_artGeneration;
+    const NSInteger artGeneration = _artGeneration;
+    _albumArtView.image = nil;
+    if (!object.albumArtUri || object.albumArtUri->empty()) return;
+
+    NSString* uri = [NSString stringWithUTF8String:object.albumArtUri->c_str()];
+    NSURL* url = [NSURL URLWithString:uri ?: @""];
+    if (url == nil) return;
+
+    NSURLSessionDataTask* task = [[NSURLSession sharedSession]
+          dataTaskWithURL:url
+        completionHandler:^(NSData* data, NSURLResponse* response, NSError* error) {
+            (void)response;
+            if (error != nil || data.length == 0) return;
+            NSImage* image = [[NSImage alloc] initWithData:data];
+            if (image == nil) return;
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (artGeneration != _artGeneration) return;
+                _albumArtView.image = image;
+            });
+        }];
+    [task resume];
 }
 
 #pragma mark - NSOutlineViewDataSource
@@ -368,15 +478,21 @@ NSString* describeBrowseError() {
                                    keyEquivalent:@""];
         add.target = self;
     } else if ([node isContainer]) {
-        NSMenuItem* add = [menu addItemWithTitle:@"將曲目加入到目前播放清單"
-                                          action:@selector(onAddClicked:)
-                                   keyEquivalent:@""];
-        add.target = self;
-        add.enabled = node.state == DmsNodeStateLoaded;
+        NSMenuItem* addDirect = [menu addItemWithTitle:@"加入直接子項曲目"
+                                                action:@selector(onAddClicked:)
+                                         keyEquivalent:@""];
+        addDirect.target = self;
+        addDirect.enabled = node.state == DmsNodeStateLoaded && !_recursiveAddJob;
+        NSMenuItem* addRecursive = [menu addItemWithTitle:@"遞迴加入所有曲目"
+                                                   action:@selector(onAddRecursiveClicked:)
+                                            keyEquivalent:@""];
+        addRecursive.target = self;
+        addRecursive.enabled = !_recursiveAddJob;
         NSMenuItem* reload = [menu addItemWithTitle:@"重新載入"
                                              action:@selector(onReloadClicked:)
                                       keyEquivalent:@""];
         reload.target = self;
+        reload.enabled = !_recursiveAddJob;
     }
 }
 
@@ -396,11 +512,134 @@ NSString* describeBrowseError() {
     [self addObjects:std::move(objects) sourceTitle:node.title];
 }
 
+- (void)onAddRecursiveClicked:(id)sender {
+    DmsTreeNode* node = [self nodeAtRow:_outlineView.clickedRow];
+    if (node == nil || ![node isContainer] || _session == nullptr ||
+        _recursiveAddJob != nullptr)
+        return;
+
+    auto session = _session;
+    auto job = std::make_shared<RecursiveAddJob>();
+    _recursiveAddJob = job;
+    _cancelAddButton.hidden = NO;
+
+    const NSInteger generation = _generation;
+    const std::string rootObjectId = node.objectId.UTF8String ?: "0";
+    NSString* sourceTitle = [node.title copy] ?: @"";
+    _statusLabel.stringValue =
+        [NSString stringWithFormat:@"正在遞迴掃描「%@」…", sourceTitle];
+
+    dispatch_async(workerQueue(), ^{
+        RecursiveCollectResult result;
+        NSString* errorText = nil;
+        try {
+            std::deque<std::string> pending;
+            pending.push_back(rootObjectId);
+
+            while (!pending.empty() && !job->cancelled) {
+                if (result.containersVisited >= kMaxRecursiveContainers) {
+                    result.truncated = true;
+                    break;
+                }
+
+                const std::string objectId = pending.front();
+                pending.pop_front();
+                ++result.containersVisited;
+
+                component::PagedBrowseResult page = session->fetchChildren(objectId);
+                if (page.truncated) result.truncated = true;
+
+                for (const auto& object : page.objects) {
+                    if (job->cancelled) break;
+                    if (object.type == upnp::UpnpObjectType::Container) {
+                        pending.push_back(object.id);
+                    } else if (object.type == upnp::UpnpObjectType::AudioItem) {
+                        if (result.objects.size() >= kMaxRecursiveTracks) {
+                            result.truncated = true;
+                            break;
+                        }
+                        result.objects.push_back(object);
+                    }
+                }
+
+                const size_t containersVisited = result.containersVisited;
+                const size_t tracksFound = result.objects.size();
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if (generation != _generation || _recursiveAddJob != job) return;
+                    _statusLabel.stringValue = [NSString
+                        stringWithFormat:@"正在遞迴掃描「%@」：%zu 個資料夾，%zu 首",
+                                         sourceTitle, containersVisited, tracksFound];
+                });
+
+                if (result.truncated &&
+                    (result.objects.size() >= kMaxRecursiveTracks ||
+                     result.containersVisited >= kMaxRecursiveContainers)) {
+                    break;
+                }
+            }
+            result.cancelled = job->cancelled;
+        } catch (...) {
+            errorText = describeBrowseError();
+            FB2K_console_formatter()
+                << "DMS Browser: recursive add root objectId=\""
+                << rootObjectId.c_str() << "\" failed, server=\""
+                << session->rootDescUrl().c_str() << "\": "
+                << errorText.UTF8String;
+        }
+
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self finishRecursiveAdd:std::move(result)
+                                root:sourceTitle
+                               error:errorText
+                          generation:generation
+                                 job:job];
+        });
+    });
+}
+
+- (void)onCancelRecursiveAdd:(id)sender {
+    if (_recursiveAddJob) {
+        _recursiveAddJob->cancelled = true;
+        _statusLabel.stringValue = @"正在取消遞迴加入…";
+    }
+}
+
 - (void)onReloadClicked:(id)sender {
     DmsTreeNode* node = [self nodeAtRow:_outlineView.clickedRow];
     if (node == nil || ![node isContainer]) return;
     node.state = DmsNodeStateIdle;
     [self loadChildrenOfNode:node];
+}
+
+- (void)finishRecursiveAdd:(RecursiveCollectResult)result
+                      root:(NSString*)rootTitle
+                     error:(NSString*)errorText
+                generation:(NSInteger)generation
+                       job:(std::shared_ptr<RecursiveAddJob>)job {
+    if (generation != _generation || _recursiveAddJob != job) return;
+    _recursiveAddJob.reset();
+    _cancelAddButton.hidden = YES;
+
+    if (errorText != nil) {
+        _statusLabel.stringValue = errorText;
+        return;
+    }
+    if (result.cancelled) {
+        _statusLabel.stringValue =
+            [NSString stringWithFormat:@"已取消「%@」遞迴加入，未加入曲目", rootTitle];
+        return;
+    }
+
+    const size_t added = dms::addToActivePlaylist(result.objects);
+    if (added == 0) {
+        _statusLabel.stringValue = [NSString
+            stringWithFormat:@"「%@」沒有可播放的項目", rootTitle];
+        return;
+    }
+    NSString* suffix = result.truncated ? @"（已達掃描上限）" : @"";
+    _statusLabel.stringValue = [NSString
+        stringWithFormat:@"已從「%@」遞迴加入 %zu 首%@",
+                         rootTitle, added, suffix];
 }
 
 - (void)addObjects:(std::vector<upnp::UpnpObject>)objects

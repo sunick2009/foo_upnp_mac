@@ -1,6 +1,6 @@
-# DMS Browser 手動測試清單（M3 MVP）
+# DMS Browser 手動測試清單（M4 進行中）
 
-**版本：** foo_dms_browser 0.1.0
+**版本：** foo_dms_browser 0.2.0-dev
 
 > **驗收紀錄（2026-07-03/04，foobar2000 v2.25.8 + foo_upnp 0.99.49）**
 > 核心流程通過：真實 server 瀏覽 → 加入 playlist（metadata 預填）→
@@ -24,7 +24,7 @@ python3 tools/mock_upnp_server.py 8200
 
 ## 1. 載入與註冊
 
-- [ ] Preferences → Components 列表出現「DMS Browser 0.1.0」。
+- [ ] Preferences → Components 列表出現「DMS Browser 0.2.0-dev」。
 - [ ] 主選單 View 出現「DMS Browser」項目。
 - [ ] Preferences → Tools 底下出現「DMS Browser」頁。
 
@@ -39,19 +39,34 @@ python3 tools/mock_upnp_server.py 8200
 ## 3. Browser 視窗（ADR-014）
 
 - [ ] View → DMS Browser 開啟視窗；關閉後再開，位置大小有記住。
+- [ ] foobar2000 layout 設定中可加入「DMS Browser」layout element；
+      加入後顯示與獨立視窗相同的 browser UI。
 - [ ] 未設定 server 時，狀態列提示到 Preferences 新增。
 - [ ] 選擇 server 後根節點自動展開，顯示頂層 container。
 - [ ] 展開 container 顯示「載入中…」後填入子項（不卡 UI，
       展開期間可捲動、可切歌）。
+- [ ] 選取含 `albumArtURI` 的曲目後，browser 底部顯示 album art 縮圖與
+      title/artist/album/date；快速切換曲目不會殘留上一張圖。
+- [ ] 選取無 album art 的曲目或 container 後，album art 區域收合或清空。
 - [ ] Preferences 改了清單後，開下拉選單能看到更新。
 
 ## 4. 加入 playlist（ADR-016）
 
 - [ ] 雙擊曲目 → 加入目前 playlist，狀態列顯示「已加入 1 首」。
-- [ ] 曲目**立即**顯示 title/artist/album/時長（DIDL 預填），
-      不是只有 URL。
-- [ ] Container 右鍵「將曲目加入到目前播放清單」→ 其直接子項曲目
+- [ ] 曲目**立即**顯示 title/artist/album/date/tracknumber/時長
+      （DIDL 預填），不是只有 URL。
+- [ ] 加入後檢查可用欄位：`%artist%`、`%album artist%`、
+      `%album%`、`%date%`、`%tracknumber%`、`%comment%`、
+      `%length_seconds%`，以及 technical info `bitrate`、`samplerate`、
+      `channels`。
+- [ ] Container 右鍵「加入直接子項曲目」→ 其直接子項曲目
       全部加入（單層，子 container 不遞迴）。
+- [ ] Container 右鍵「遞迴加入所有曲目」→ 狀態列顯示已掃描資料夾數與
+      已找到曲目數，完成後整棵子樹的曲目加入 playlist。
+- [ ] 遞迴加入進行中按「取消加入」→ 狀態列顯示取消，且不加入 partial
+      結果。
+- [ ] 遞迴加入達 10,000 首或 10,000 個 container 上限時，狀態列標示
+      已達掃描上限。
 - [ ] 加入的曲目可播放（真實 server；mock server 的 URL 是假的，
       播放失敗屬預期）。
 - [ ] 播放中 seek 正常（server 支援 range request 時）。
@@ -75,10 +90,10 @@ python3 tools/mock_upnp_server.py 8200
       ，內網）：root browse、中日文標題、多 res 選擇（WAV 優先於
       L16）、加入後可播放。
 
-## 已知限制（v1 設計如此）
+## 已知限制與待驗證
 
-- Container 加入為單層，不遞迴（M4，ADR-016）。
-- 視窗不可停靠為 layout element（M4，ADR-014）。
+- layout element 已可編譯註冊，但仍需真機確認 foobar2000 mac layout UI
+  是否列出第三方 element（ADR-014 M4 revision）。
 - 無 SSDP 自動探索（M6）。
 - 超過 10,000 項的 container 會截斷並標示（ADR-012 修訂）。
 

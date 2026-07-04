@@ -1,5 +1,7 @@
 #include "upnp/DidlLiteParser.hpp"
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
 
@@ -32,6 +34,27 @@ std::optional<std::string> optionalText(const pugi::xml_node& parent, const char
     return std::string(node.child_value());
 }
 
+std::optional<std::string> optionalAttribute(const pugi::xml_node& node,
+                                             const char* name) {
+    auto attr = node.attribute(name);
+    if (!attr || !*attr.value()) return std::nullopt;
+    return std::string(attr.value());
+}
+
+std::string lowerAscii(std::string value) {
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    return value;
+}
+
+bool isAlbumArtistRole(const std::optional<std::string>& role) {
+    if (!role) return false;
+    const std::string lowered = lowerAscii(*role);
+    return lowered == "albumartist" || lowered == "album artist" ||
+           lowered == "album_artist";
+}
+
 UpnpObjectType typeFromUpnpClass(const std::string& upnpClass) {
     if (upnpClass.rfind("object.container", 0) == 0) return UpnpObjectType::Container;
     if (upnpClass.rfind("object.item.audioItem", 0) == 0) return UpnpObjectType::AudioItem;
@@ -61,6 +84,18 @@ UpnpResource parseResource(const pugi::xml_node& res) {
     if (auto attr = res.attribute("bitrate")) {
         resource.bitrate = static_cast<uint32_t>(std::strtoul(attr.value(), nullptr, 10));
     }
+    if (auto attr = res.attribute("bitsPerSample")) {
+        resource.bitsPerSample =
+            static_cast<uint32_t>(std::strtoul(attr.value(), nullptr, 10));
+    }
+    if (auto attr = res.attribute("sampleFrequency")) {
+        resource.sampleFrequency =
+            static_cast<uint32_t>(std::strtoul(attr.value(), nullptr, 10));
+    }
+    if (auto attr = res.attribute("nrAudioChannels")) {
+        resource.nrAudioChannels =
+            static_cast<uint32_t>(std::strtoul(attr.value(), nullptr, 10));
+    }
     return resource;
 }
 
@@ -80,9 +115,29 @@ UpnpObject parseObject(const pugi::xml_node& node, bool isContainer) {
         return obj;
     }
 
-    obj.artist = optionalText(node, "artist");
+    for (auto& child : node.children()) {
+        if (std::strcmp(localName(child), "artist") != 0) continue;
+        if (!*child.child_value()) continue;
+
+        UpnpArtist artist;
+        artist.name = child.child_value();
+        artist.role = optionalAttribute(child, "role");
+        obj.artists.push_back(artist);
+        if (isAlbumArtistRole(artist.role) && !obj.albumArtist) {
+            obj.albumArtist = artist.name;
+        } else if (!obj.artist) {
+            obj.artist = artist.name;
+        }
+    }
     obj.album = optionalText(node, "album");
     obj.genre = optionalText(node, "genre");
+    obj.creator = optionalText(node, "creator");
+    obj.date = optionalText(node, "date");
+    obj.originalTrackNumber = optionalText(node, "originalTrackNumber");
+    obj.discNumber = optionalText(node, "originalDiscNumber");
+    if (!obj.discNumber) obj.discNumber = optionalText(node, "discNumber");
+    obj.totalDiscs = optionalText(node, "totalDiscs");
+    obj.longDescription = optionalText(node, "longDescription");
     obj.albumArtUri = optionalText(node, "albumArtURI");
     for (auto& child : node.children()) {
         if (std::strcmp(localName(child), "res") == 0) {

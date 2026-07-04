@@ -1,8 +1,34 @@
 #include "component/HintFields.hpp"
 
 #include <cstdlib>
+#include <string>
 
 namespace component {
+
+namespace {
+
+void addMeta(std::vector<std::pair<std::string, std::string>>& meta,
+             const std::string& field,
+             const std::optional<std::string>& value) {
+    if (value && !value->empty()) meta.emplace_back(field, *value);
+}
+
+void addMetaIfDistinct(std::vector<std::pair<std::string, std::string>>& meta,
+                       const std::string& field,
+                       const std::optional<std::string>& value,
+                       const std::optional<std::string>& other) {
+    if (!value || value->empty()) return;
+    if (other && *value == *other) return;
+    meta.emplace_back(field, *value);
+}
+
+void addInfo(std::vector<std::pair<std::string, std::string>>& info,
+             const std::string& field,
+             const std::optional<uint32_t>& value) {
+    if (value) info.emplace_back(field, std::to_string(*value));
+}
+
+} // namespace
 
 std::optional<double> parseDidlDuration(const std::string& duration) {
     if (duration.empty()) return std::nullopt;
@@ -36,13 +62,31 @@ HintData hintFieldsFor(const upnp::UpnpObject& object,
                        const std::string& resourceDuration) {
     HintData data;
     if (!object.title.empty()) data.meta.emplace_back("title", object.title);
-    if (object.artist && !object.artist->empty())
-        data.meta.emplace_back("artist", *object.artist);
-    if (object.album && !object.album->empty())
-        data.meta.emplace_back("album", *object.album);
-    if (object.genre && !object.genre->empty())
-        data.meta.emplace_back("genre", *object.genre);
+    const auto artist = object.artist ? object.artist : object.creator;
+    addMeta(data.meta, "artist", artist);
+    addMeta(data.meta, "album artist", object.albumArtist);
+    addMeta(data.meta, "album", object.album);
+    addMeta(data.meta, "genre", object.genre);
+    addMeta(data.meta, "date", object.date);
+    addMeta(data.meta, "tracknumber", object.originalTrackNumber);
+    addMeta(data.meta, "discnumber", object.discNumber);
+    addMeta(data.meta, "totaldiscs", object.totalDiscs);
+    addMeta(data.meta, "comment", object.longDescription);
+    addMetaIfDistinct(data.meta, "creator", object.creator, artist);
     data.lengthSeconds = parseDidlDuration(resourceDuration);
+    return data;
+}
+
+HintData hintFieldsFor(const upnp::UpnpObject& object,
+                       const upnp::UpnpResource& resource) {
+    HintData data = hintFieldsFor(object, resource.duration);
+    if (resource.bitrate) {
+        const uint32_t kbps = static_cast<uint32_t>((*resource.bitrate * 8 + 999) / 1000);
+        data.info.emplace_back("bitrate", std::to_string(kbps));
+    }
+    addInfo(data.info, "bitspersample", resource.bitsPerSample);
+    addInfo(data.info, "samplerate", resource.sampleFrequency);
+    addInfo(data.info, "channels", resource.nrAudioChannels);
     return data;
 }
 

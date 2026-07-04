@@ -32,8 +32,20 @@ TEST_CASE("parses audio items with full and minimal metadata", "[parser][didl]")
     CHECK(full.type == UpnpObjectType::AudioItem);
     CHECK(full.title == "Example Track");
     CHECK(full.artist == "Example Artist");
+    REQUIRE(full.artists.size() == 2);
+    CHECK(full.artists[0].name == "Example Artist");
+    CHECK_FALSE(full.artists[0].role.has_value());
+    CHECK(full.artists[1].name == "Example Album Artist");
+    CHECK(full.artists[1].role == "AlbumArtist");
+    CHECK(full.albumArtist == "Example Album Artist");
     CHECK(full.album == "Example Album");
     CHECK(full.genre == "Jazz");
+    CHECK(full.creator == "Example Creator");
+    CHECK(full.date == "2024-05-06");
+    CHECK(full.originalTrackNumber == "7");
+    CHECK(full.discNumber == "2");
+    CHECK(full.totalDiscs == "3");
+    CHECK(full.longDescription == "Mastered from original tapes");
     CHECK(full.albumArtUri == "http://192.168.1.10:8200/AlbumArt/1-123.jpg");
     REQUIRE(full.resources.size() == 1);
     CHECK(full.resources[0].url == "http://192.168.1.10:8200/media/track-123.flac");
@@ -41,10 +53,14 @@ TEST_CASE("parses audio items with full and minimal metadata", "[parser][didl]")
     CHECK(full.resources[0].duration == "0:04:12.000");
     CHECK(full.resources[0].size == 31415926);
     CHECK(full.resources[0].bitrate == 120000);
+    CHECK(full.resources[0].bitsPerSample == 24);
+    CHECK(full.resources[0].sampleFrequency == 96000);
+    CHECK(full.resources[0].nrAudioChannels == 2);
 
     const auto& minimal = objects[1];
     CHECK(minimal.type == UpnpObjectType::AudioItem);
     CHECK_FALSE(minimal.artist.has_value());
+    CHECK(minimal.artists.empty());
     CHECK_FALSE(minimal.albumArtUri.has_value());
     REQUIRE(minimal.resources.size() == 1);
     CHECK(minimal.resources[0].mimeType == "audio/mpeg");

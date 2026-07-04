@@ -3,7 +3,7 @@
 
 DECLARE_COMPONENT_VERSION(
     "DMS Browser",
-    "0.1.0",
+    "0.2.0-dev",
     "Browse UPnP/DLNA media servers and add remote tracks to playlists.\n"
     "https://github.com/sunick2009/foo_upnp_mac"
 );
