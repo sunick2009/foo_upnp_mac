@@ -9,6 +9,10 @@
 
 namespace component {
 
+// Custom metadb field carrying the DIDL albumArtURI so the album art
+// fallback service can fetch cover art for remote tracks (ADR-016).
+inline constexpr const char* kAlbumArtUriField = "UPNP_ALBUM_ART_URI";
+
 // Metadata to hint into fb2k's metadb for one added track (ADR-016).
 // meta pairs use fb2k field names ("title", "artist", ...).
 struct HintData {

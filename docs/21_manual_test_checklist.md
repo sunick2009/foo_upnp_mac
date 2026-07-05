@@ -24,28 +24,28 @@ python3 tools/mock_upnp_server.py 8200
 
 ## 1. 載入與註冊
 
-- [ ] Preferences → Components 列表出現「DMS Browser 0.2.0-dev」。
-- [ ] 主選單 View 出現「DMS Browser」項目。
-- [ ] Preferences → Tools 底下出現「DMS Browser」頁。
+- [x] Preferences → Components 列表出現「DMS Browser 0.2.0-dev」。
+- [x] 主選單 View 出現「DMS Browser」項目。
+- [x] Preferences → Tools 底下出現「DMS Browser」頁。
 
 ## 2. Preferences：server 清單管理（ADR-015）
 
-- [ ] 「+」新增一列，名稱欄自動進入編輯。
-- [ ] 填入名稱與 URL 後，關閉再開 Preferences，資料仍在。
-- [ ] **重啟 foobar2000**，資料仍在（cfg_var 持久化）。
-- [ ] 選取一列按「−」可刪除。
-- [ ] 名稱含中文/特殊字元（`"`、`\`）存取正常。
+- [x] 「+」新增一列，名稱欄自動進入編輯。
+- [x] 填入名稱與 URL 後，關閉再開 Preferences，資料仍在。
+- [x] **重啟 foobar2000**，資料仍在（cfg_var 持久化）。
+- [x] 選取一列按「−」可刪除。
+- [x] 名稱含中文/特殊字元（`"`、`\`）存取正常。
 
 ## 3. Browser 視窗（ADR-014）
 
-- [ ] View → DMS Browser 開啟視窗；關閉後再開，位置大小有記住。
-- [ ] foobar2000 layout 設定中可加入「DMS Browser」layout element；
+- [x] View → DMS Browser 開啟視窗；關閉後再開，位置大小有記住。
+- [x] foobar2000 layout 設定中可加入「DMS Browser」layout element；
       加入後顯示與獨立視窗相同的 browser UI。
-- [ ] 未設定 server 時，狀態列提示到 Preferences 新增。
-- [ ] 選擇 server 後根節點自動展開，顯示頂層 container。
+- [x] 未設定 server 時，狀態列提示到 Preferences 新增。
+- [x] 選擇 server 後根節點自動展開，顯示頂層 container。
 - [ ] 展開 container 顯示「載入中…」後填入子項（不卡 UI，
       展開期間可捲動、可切歌）。
-- [ ] 選取含 `albumArtURI` 的曲目後，browser 底部顯示 album art 縮圖與
+- [x] 選取含 `albumArtURI` 的曲目後，browser 底部顯示 album art 縮圖與
       title/artist/album/date；快速切換曲目不會殘留上一張圖。
 - [ ] 選取曲目時，browser 底部顯示實際會播放的 resource 摘要
       （MIME、duration、sample rate、bit depth、channels；欄位依 server
@@ -72,6 +72,8 @@ python3 tools/mock_upnp_server.py 8200
       結果。
 - [ ] 遞迴加入達 10,000 首或 10,000 個 container 上限時，狀態列標示
       已達掃描上限。
+- [ ] 加入含 `albumArtURI` 的曲目後，playlist/Now Playing 顯示封面
+      （album_art_fallback 下載；第一次查詢需等下載完成）。
 - [ ] 加入的曲目可播放（真實 server；mock server 的 URL 是假的，
       播放失敗屬預期）。
 - [ ] 播放中 seek 正常（server 支援 range request 時）。

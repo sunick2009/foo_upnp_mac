@@ -58,9 +58,10 @@ TEST_CASE("full didl object maps to all hint fields", "[hints]") {
     object.discNumber = "2";
     object.totalDiscs = "3";
     object.longDescription = "Ripped with confidence";
+    object.albumArtUri = "http://server:8200/art/2.jpg";
 
     const auto data = hintFieldsFor(object, "0:03:25");
-    REQUIRE(data.meta.size() == 11);
+    REQUIRE(data.meta.size() == 12);
     CHECK(metaValue(data, "title") == "第二首歌");
     CHECK(metaValue(data, "artist") == "Some Artist");
     CHECK(metaValue(data, "album artist") == "Some Album Artist");
@@ -72,6 +73,8 @@ TEST_CASE("full didl object maps to all hint fields", "[hints]") {
     CHECK(metaValue(data, "totaldiscs") == "3");
     CHECK(metaValue(data, "comment") == "Ripped with confidence");
     CHECK(metaValue(data, "creator") == "Some Creator");
+    CHECK(metaValue(data, component::kAlbumArtUriField) ==
+          "http://server:8200/art/2.jpg");
     CHECK(data.lengthSeconds == 205.0);
 }
 

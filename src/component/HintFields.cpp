@@ -73,6 +73,7 @@ HintData hintFieldsFor(const upnp::UpnpObject& object,
     addMeta(data.meta, "totaldiscs", object.totalDiscs);
     addMeta(data.meta, "comment", object.longDescription);
     addMetaIfDistinct(data.meta, "creator", object.creator, artist);
+    addMeta(data.meta, kAlbumArtUriField, object.albumArtUri);
     data.lengthSeconds = parseDidlDuration(resourceDuration);
     return data;
 }
