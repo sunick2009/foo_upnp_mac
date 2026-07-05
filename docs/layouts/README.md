@@ -10,7 +10,8 @@ foobar2000 mac 的 layout 是縮排文字 DSL（app 內建預設存於
   `albumart type="front cover"`、`playback-controls`、`searchbox`、
   `filters`、`selection-properties`、`console`。
 - 第三方 element（如本 component 的 `DMS Browser`）以
-  `ui_element_mac::match_name` 的名稱引用。
+  `ui_element_mac::match_name` 的名稱引用；名稱含空白時必須加引號
+  （真機驗證：不加引號會報 `Unknown element`）。
 
 套用方式：foobar2000 → Layout → Edit Layout...，貼上檔案內容。
 
@@ -18,6 +19,3 @@ foobar2000 mac 的 layout 是縮排文字 DSL（app 內建預設存於
 
 左側 tab（DMS Browser / Playlists）＋中間 playlist ＋右側封面＋
 底部播放控制列。
-
-若「DMS Browser」一行報 `Unknown element`，改成加引號的
-`"DMS Browser"` 再試一次。
