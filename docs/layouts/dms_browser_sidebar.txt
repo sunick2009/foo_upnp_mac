@@ -1,0 +1,9 @@
+splitter horizontal style=thin
+ splitter vertical style=thin
+  tabs position=top
+   DMS Browser tab-name="DMS Browser"
+   playlist-picker tab-name="Playlists"
+  splitter vertical style=thin
+   playlist
+   albumart type="front cover"
+ playback-controls
