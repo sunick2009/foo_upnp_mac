@@ -131,7 +131,9 @@ public:
             if (std::find(uris.begin(), uris.end(), uri) == uris.end())
                 uris.emplace_back(uri);
         }
-        if (uris.empty()) return nullptr;
+        // Never return null: fb2k core dereferences the result without a
+        // null check (verified by a real crash). An instance with no URIs
+        // reports not-found through the documented exception path instead.
         return fb2k::service_new<DmsAlbumArtInstance>(std::move(uris));
     }
 };
