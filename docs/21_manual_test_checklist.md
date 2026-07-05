@@ -8,6 +8,12 @@
 > 顯示解析錯誤。Preferences 中文與持久化通過。
 > 過程中修復三個問題：prefs 編輯失焦不存檔、空清單版面擠壓、
 > 失敗節點無限重試（commit ff7137f、a2a00f4）。
+>
+> **驗收紀錄（2026-07-05）**
+> playlist 封面（album_art_fallback 下載）通過；自訂 layout（tab 內
+> DMS Browser + Playlists）通過，第三方 element 名稱含空白須加引號。
+> 過程中修復一個 crash：fallback `open()` 回傳 null 導致點選無封面
+> 曲目 SIGSEGV（commit 5cb9a98）。
 **前置：** component 已安裝（`~/Library/foobar2000-v2/user-components/
 foo_dms_browser.component`）並重啟 foobar2000。
 自動化已涵蓋的部分（adapter 邏輯、載入不崩潰）不在此清單。
@@ -72,7 +78,7 @@ python3 tools/mock_upnp_server.py 8200
       結果。
 - [ ] 遞迴加入達 10,000 首或 10,000 個 container 上限時，狀態列標示
       已達掃描上限。
-- [ ] 加入含 `albumArtURI` 的曲目後，playlist/Now Playing 顯示封面
+- [x] 加入含 `albumArtURI` 的曲目後，playlist/Now Playing 顯示封面
       （album_art_fallback 下載；第一次查詢需等下載完成）。
 - [ ] 加入的曲目可播放（真實 server；mock server 的 URL 是假的，
       播放失敗屬預期）。
