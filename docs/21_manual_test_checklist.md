@@ -35,6 +35,17 @@ python3 tools/mock_upnp_server.py 8200
 # → URL: http://127.0.0.1:8200/rootDesc.xml
 ```
 
+Mock server 測試用 fixture（2026-07-17 擴充）：
+
+- `Mixed Fixtures`：`rich-track`（全 metadata 欄位 + albumArtURI +
+  bitrate/samplerate/bit depth/channels）、`nores-track`（無 `<res>`，
+  加入時應被略過並計數）、`plain-track`。
+- `Broken (SOAP fault)`：展開時 server 回 SOAP fault 701。
+- `Slow (5s per browse)`：每次 Browse 延遲 5 秒，用來捕捉「載入中…」
+  與驗證 UI 不阻塞。
+- `Big Tree (15000 tracks)`：150 個子資料夾 × 100 首（每次 Browse 延遲
+  50ms）；遞迴加入會觸發 10,000 首上限，掃描期間有時間按「取消加入」。
+
 ## 1. 載入與註冊
 
 - [x] Preferences → Components 列表出現「DMS Browser 0.2.0-dev」。
@@ -193,13 +204,12 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
 
 ### 尚未完成的覆蓋
 
-- 現有 mock fixture 沒有 `albumArtURI`、無 HTTP resource 的 item、延遲
-  掃描資料或超過 10,000 項資料，因此略過數量、取消遞迴加入、掃描上限及
-  albumArt metadata 的完整欄位組合尚未完整驗證。
-- 現有 browser UI 沒有可直接建立不存在 ObjectID 的節點，因此 mock SOAP
-  fault 尚未透過 UI 完成驗證。
+- ~~現有 mock fixture 沒有 `albumArtURI`、無 HTTP resource 的 item、延遲
+  掃描資料或超過 10,000 項資料~~ mock server 已擴充上述 fixture（見
+  「環境」節），略過數量、掃描上限、載入中畫面、SOAP fault 經 UI、
+  逐欄位 metadata 現在都可用 mock 測試——**尚待實際執行 UI 驗證**。
 - 未逐欄驗證 `%artist%`、`%album artist%`、`%date%`、`%tracknumber%`、
-  `%comment%` 及所有 technical info 欄位。
+  `%comment%` 及所有 technical info 欄位（可用 mock 的 `rich-track`）。
 
 **清理結果：** 已移除本次新增的 `Keyboard Save Test` server 設定列；`main`
 與 mock server 設定保留原值，mock server 未啟動。取消及 timeout 遞迴操作本身
