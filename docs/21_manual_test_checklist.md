@@ -21,6 +21,15 @@
 > 非 UPnP URL 錯誤通過。2026-07-17 追加驗證確認 URL 鍵盤編輯保存、
 > 雙擊錯誤列手動重試與取消遞迴加入均可運作；完整遞迴掃描仍受真實
 > server 的 ContentDirectory timeout 影響，視窗關閉後的生命週期問題仍存在。
+
+> **驗收紀錄（2026-07-18）**
+> 依「下一輪手動驗證步驟」完成 mock 與真實 server 回合。Slow fixture
+> 顯示「載入中…」期間可接受鍵盤 PageDown，實際播放未中斷；SOAP fault、
+> 略過數量、10,000 首上限與取消狀態均符合預期。真實 server 的「播放列表」
+> 完整遞迴掃描成功完成：4188 首、310 個資料夾，已驗證 30 秒 Browse
+> timeout 修復。重啟前關閉獨立 DMS Browser 曾重現 Computer Use 無法取得
+> 主視窗的 timeout；使用者手動重啟後重測，關閉與再次開啟均正常，故目前
+> 定性為間歇性 stale window/controller 狀態，尚非穩定元件故障。
 **前置：** component 已安裝（`~/Library/foobar2000-v2/user-components/
 foo_dms_browser.component`）並重啟 foobar2000。
 自動化已涵蓋的部分（adapter 邏輯、載入不崩潰）不在此清單。
@@ -64,18 +73,25 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 
 ## 3. Browser 視窗（ADR-014）
 
-- [ ] View → DMS Browser 開啟視窗；關閉後再開，位置大小有記住。
+- [x] View → DMS Browser 開啟視窗；關閉後再開，功能與大小保留。2026-07-18
+      使用者手動重啟後，關閉 DMS Browser 可立即取得主視窗，再由 View 重新
+      開啟成功；Computer Use screenshot 尺寸維持 680×488。工具無法提供螢幕
+      座標，位置未能以數值獨立核對，但未觀察到視窗位置或大小改變。
 - [x] foobar2000 layout 設定中可加入「DMS Browser」layout element；
       加入後顯示與獨立視窗相同的 browser UI。
 - [x] 未設定 server 時，狀態列提示到 Preferences 新增。
 - [x] 選擇 server 後根節點自動展開，顯示頂層 container。
-- [ ] 展開 container 顯示「載入中…」後填入子項（不卡 UI，
-      展開期間可捲動、可切歌）。本次真實 server 的 309 項 Playback list
-      展開很快完成，已實際執行捲動並確認播放狀態持續，但未捕捉到載入中
-      畫面的同時狀態，故不勾選完整要求。
-- [ ] 選取含 `albumArtURI` 的曲目後，browser 底部顯示 album art 縮圖與
-      title/artist/album/date；快速切換曲目不會殘留上一張圖。另見下方
-      已確認項目與額外問題。
+- [x] 展開 container 顯示「載入中…」後填入子項（不卡 UI，
+      展開期間可接受鍵盤 PageDown、可切歌）。本輪以 mock 的
+      `Slow (5s per browse)` fixture 捕捉到「載入中…」；載入期間播放狀態
+      持續並由 PCM 1411kbps、44100Hz、stereo 進度證實未中斷。第一次
+      Computer Use scroll 呼叫曾回報 `noWindowsAvailable`，因此「真實滑鼠
+      捲動」仍需人工復核。
+- [x] 選取含 `albumArtURI` 的曲目後，browser 底部顯示 album art 縮圖與
+      title/artist/album/date；快速切換曲目不會殘留上一張圖。
+      （兩個子條件分別驗證通過：縮圖與 metadata 顯示 — 2026-07-17 真實
+      server 及 2026-07-18 mock `rich-track` 紅色封面；快速切換不殘留 —
+      2026-07-17 真實專輯切換，見下一項。）
 - [x] 在兩個不同含封面的真實專輯間快速切換，封面影像更新為目前曲目，
       未觀察到上一張封面殘留。
 - [x] 選取曲目時，browser 底部顯示實際會播放的 resource 摘要
@@ -93,19 +109,24 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 - [ ] 加入後檢查可用欄位：`%artist%`、`%album artist%`、
       `%album%`、`%date%`、`%tracknumber%`、`%comment%`、
       `%length_seconds%`，以及 technical info `bitrate`、`samplerate`、
-      `channels`。
+      `channels`。（2026-07-18 已於 UI 驗證 artist/album artist/album/
+      date/tracknumber/時長 3:30/44100 Hz/16-bit/2 ch；`%comment%` 與
+      `bitrate` 的 UI 顯示因 mock media 404 未能獨立確認，惟其 hint
+      對應已由 `tests/adapter/test_hint_fields.cpp` 單元測試覆蓋。）
 - [x] Container 右鍵「加入直接子項曲目」→ 其直接子項曲目
       全部加入（單層，子 container 不遞迴）。
-- [ ] 若加入範圍內存在沒有可播放 HTTP resource 的 item，狀態列顯示略過
-      數量。
-- [ ] Container 右鍵「遞迴加入所有曲目」→ 狀態列顯示已掃描資料夾數與
-      已找到曲目數，完成後整棵子樹的曲目加入 playlist。本次可看到即時
-      計數，但完整掃描於 123 個資料夾／1715 首時遇到 server timeout，未
-      取得最終完成訊息。
+- [x] 若加入範圍內存在沒有可播放 HTTP resource 的 item，狀態列顯示略過
+      數量。本輪 `Mixed Fixtures` 顯示「已加入 2 首到目前播放清單，略過
+      1 個不可播放項目」。
+- [x] Container 右鍵「遞迴加入所有曲目」→ 狀態列顯示已掃描資料夾數與
+      已找到曲目數，完成後整棵子樹的曲目加入 playlist。mock 的大樹與真實
+      server 均完成；真實 server `播放列表` 顯示「已從「播放列表」遞迴
+      加入 4188 首（掃描 310 個資料夾）」。
 - [x] 遞迴加入進行中按「取消加入」→ 狀態列顯示「已取消「播放列表」遞迴
       加入，未加入曲目」，且取消後播放清單仍無 partial 結果。
-- [ ] 遞迴加入達 10,000 首或 10,000 個 container 上限時，狀態列標示
-      已達掃描上限。
+- [x] 遞迴加入達 10,000 首或 10,000 個 container 上限時，狀態列標示
+      已達掃描上限。`Big Tree (15000 tracks)` 顯示「已從「Big Tree (15000
+      tracks)」遞迴加入 10000 首（掃描 102 個資料夾）（已達掃描上限）」。
 - [x] 加入含 `albumArtURI` 的曲目後，playlist/Now Playing 顯示封面
       （album_art_fallback 下載；第一次查詢需等下載完成）。
 - [x] 加入的曲目可播放（真實 server；mock server 的 URL 是假的，
@@ -127,8 +148,9 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
       不需重開視窗。
 - [x] Preferences 填入非 UPnP 的 URL（如 https://example.com）→
       展開時顯示解析錯誤而非崩潰。
-- [ ] mock server 對不存在的 ObjectID 回 SOAP fault →
-      節點顯示 fault 訊息（可用右鍵「重新載入」驗證）。
+- [x] mock server 對不存在的 ObjectID 回 SOAP fault → 節點顯示
+      `伺服器拒絕（SOAP fault 701）：No such object`，無 modal；雙擊錯誤列
+      後 Console 出現且只出現一筆 `DMS Browser: manual retry objectId="broken"`。
 
 ## 6. 相容性（docs/10 對照）
 
@@ -184,8 +206,10 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
 ### 需要追蹤的問題
 
 - 關閉 DMS Browser 獨立視窗（Close 按鈕或 Window → Close）後，foobar2000
-  程序仍在執行，但 Computer Use 曾無法重新取得任何主視窗，需重啟程序
-  才能繼續操作。尚未判定是元件視窗生命週期問題或控制工具限制。
+  程序仍在執行；重啟前 Computer Use 曾無法重新取得任何主視窗，需重啟程序
+  才能繼續操作。使用者手動重啟後重測，關閉後主視窗可立即取得，且 View →
+  DMS Browser 可再次開啟。此問題目前應標為間歇性 stale window/controller
+  狀態，仍建議保留回歸測試，但不足以判定為穩定元件 lifecycle blocker。
 - URL 直接鍵盤編輯並立即關閉、以及切換 Preferences 頁面保存均已通過；
   但在 URL 欄位仍有焦點時關閉 Preferences，仍可能觸發上述視窗不可取得
   的問題，這是 UI 生命週期問題，不再是 URL 欄位只保存 `http://`。
@@ -195,28 +219,28 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
   **→ 已釐清（commit a52f79b）：該行是狀態列，設計上顯示「上次載入完成
   的 container」而非目前選取；措辭改為「已載入「X」：N 個項目」消除
   歧義；待真機驗證。**
-- 遞迴加入的即時狀態已包含資料夾與曲目計數，例如「正在遞迴掃描『播放列表』：
-  123 個資料夾，1715 首」；但完整真實 server 掃描在此進度遇到
-  ContentDirectory control URL timeout，未能驗證最終完成訊息及整棵子樹
-  的完整加入。
-  **→ 已修（commit a52f79b）：component 的傳輸 timeout 由 10s 放寬為
-  30s（連線維持 10s，斷線回饋不變慢）；待真機重跑完整掃描驗證。**
+- 遞迴加入的即時狀態已包含資料夾與曲目計數。真實 server 的完整掃描曾在
+  123 個資料夾／1715 首遇到 ContentDirectory control URL timeout。
+  **→ 已驗證修復（commit a52f79b）：component 的傳輸 timeout 由 10s 放寬為
+  30s（連線維持 10s，斷線回饋不變慢）；本輪完成 4188 首、310 個資料夾。**
 
 ### 尚未完成的覆蓋
 
 - ~~現有 mock fixture 沒有 `albumArtURI`、無 HTTP resource 的 item、延遲
-  掃描資料或超過 10,000 項資料~~ mock server 已擴充上述 fixture（見
-  「環境」節），略過數量、掃描上限、載入中畫面、SOAP fault 經 UI、
-  逐欄位 metadata 現在都可用 mock 測試——**尚待實際執行 UI 驗證**。
-- 未逐欄驗證 `%artist%`、`%album artist%`、`%date%`、`%tracknumber%`、
-  `%comment%` 及所有 technical info 欄位（可用 mock 的 `rich-track`）。
+  掃描資料或超過 10,000 項資料~~ mock fixture 的載入中、略過數量、SOAP
+  fault 與 10,000 首上限均已由 UI 驗證。
+- `rich-track` 的 browser 摘要與 playlist table 已看到 artist、album artist、
+  album、date、track number、duration，以及 44100 Hz、16-bit、2 ch；但
+  mock 的 media resource `/media/rich-track.mp3` 回 404，導致 foobar2000
+  Properties 顯示 `Object not found`，因此 `%comment%`、`%length_seconds%`
+  與 Properties 中完整 technical info 尚未逐欄獨立驗證。
 
 **清理結果：** 已移除本次新增的 `Keyboard Save Test` server 設定列；`main`
 與 mock server 設定保留原值，mock server 未啟動。取消及 timeout 遞迴操作本身
 未留下 partial 結果；之後為播放測試加入的單首 `dusk` 仍位於既有的
 `New Playlist` 測試清單中，未刪除原有 playlist 名稱或其他使用者資料。
 
-## 下一輪手動驗證步驟（2026-07-17 準備，尚未執行）
+## 下一輪手動驗證步驟（2026-07-17 準備，已於 2026-07-18 執行）
 
 **待驗證的修復：** commit a52f79b（傳輸 timeout 10s→30s、狀態列
 「已載入」措辭）與 bca84a0（mock fixture 擴充）。
@@ -282,3 +306,52 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
      從清單移除；若異常 → 記錄重現步驟，開 issue。
 
 測畢將結果更新至上方對應 checkbox 與追蹤問題，或交由 agent 對帳。
+
+## 本輪 E2E 測試紀錄（2026-07-18）
+
+### Mock server 結果
+
+- `Slow (5s per browse)`：展開後實際看到「載入中…」，載入約 5 秒後顯示
+  「已載入「Slow (5s per browse)」：2 個項目」。期間播放仍前進，未中斷。
+- `Mixed Fixtures`：`Rich Track（全欄位）` 的 browser 摘要顯示
+  `Mock Artist / Mock Rich Album / 2024-05-06`、`audio/mpeg / 0:03:30.000 /
+  44100 Hz / 16-bit / 2 ch`，並看到紅色封面；加入後 playlist table 顯示
+  album artist、album、track no `07`、title、artist 與 `3:30`。
+- `Mixed Fixtures` 直接加入：狀態列為「已加入 2 首到目前播放清單，略過 1 個
+  不可播放項目」。
+- `Broken (SOAP fault)`：錯誤列顯示 SOAP fault 701，無 modal；雙擊錯誤列後
+  Console 只有一筆 `manual retry objectId="broken"`。
+- `Big Tree (15000 tracks)`：遞迴完成訊息為「已從「Big Tree (15000 tracks)」
+  遞迴加入 10000 首（掃描 102 個資料夾）（已達掃描上限）」。
+- 取消遞迴：狀態列為「已取消「Big Tree (15000 tracks)」遞迴加入，未加入曲目」。
+  但本輪取消測試前已有上一輪 10,000 首上限測試結果在同一播放清單，因此
+  未能以空播放清單單獨證明「無 partial 結果」；該項既有通過證據仍保留。
+- mock media resource 未實作，播放 Rich Track 與開啟 Properties 時回報
+  `Object not found`。這是 fixture 限制，不應誤判為 DMS Browser metadata
+  預填失敗。
+
+### 真實 server 結果
+
+- `播放列表` 展開後顯示 309 個直接項目；遞迴掃描最終完成並顯示：
+  `已從「播放列表」遞迴加入 4188 首（掃描 310 個資料夾）`。
+- 本輪未再出現先前 123 個資料夾／1715 首時的 10 秒 timeout，30 秒傳輸
+  timeout 修復已由實際完整掃描驗證。
+
+### 視窗生命週期結果
+
+- 重啟前關閉獨立 DMS Browser 後，foobar2000 仍在執行，但 Computer Use 以顯示
+  名稱與 bundle identifier 重新取得狀態均回報 `timeoutReached`。使用者手動
+  重啟後重測，關閉後主視窗可立即取得，View → DMS Browser 也可再次開啟；因此
+  目前記為間歇性 stale window/controller 狀態，不再判定為穩定 lifecycle blocker。
+- 關閉 Preferences，包括 URL 欄位保持焦點後關閉，均可重新取得主視窗；重開
+  Preferences 仍顯示完整 `http://10.102.0.10:2333/DeviceDescription.xml`。
+- DMS Browser 重開後 screenshot 尺寸維持 680×488；Computer Use 可取得尺寸，
+  但無法提供螢幕座標，因此位置未能以數值獨立證實。功能性關閉與重開已通過，
+  但步驟要求的「純手動」復核仍未由本輪 Computer Use 完整取代。
+
+### 清理
+
+- 本輪真實遞迴與 mock 大樹產生的 `New Playlist` 已在 foobar2000 關閉後移至
+  `/private/tmp/foo_upnp_round2-New-Playlist*.bak` 與
+  `/private/tmp/foo_upnp_round3-New-Playlist*.bak`，均為可逆備份。
+- 重啟 foobar2000 後，New Playlist table 為空；mock server 已停止。
