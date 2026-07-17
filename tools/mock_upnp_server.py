@@ -11,9 +11,14 @@ Browse with canned DIDL-Lite. Object tree:
         track-2    MP3 audio item (unicode title)
       video        container, 0 children
       mixed        container, 3 children — full-metadata + skipped fixtures
-        rich-track    every metadata field + albumArtURI + res attributes
+        rich-track    every metadata field + albumArtURI + res attributes;
+                      playable WAV (DIDL duration 3:30 vs real 4s on purpose)
         nores-track   audio item WITHOUT any <res> (must be skipped on add)
-        plain-track   normal MP3 item
+        plain-track   playable WAV item
+
+    /media/*.wav serves 4s of a quiet 440 Hz tone (44100/16/stereo) so
+    mixed/slow tracks really play in foobar2000; music and bigtree URLs
+    stay fake (404) — playback failure there is expected.
       broken       container; browsing it returns SOAP fault 701
       slow         container, 2 children; each Browse sleeps 5s
                    (capture 載入中…, UI must stay responsive)
@@ -31,9 +36,13 @@ Usage:
 """
 
 import base64
+import io
+import math
 import re
+import struct
 import sys
 import time
+import wave
 import xml.sax.saxutils as sax
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -47,6 +56,28 @@ PNG_COVER = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ"
     "AAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
 )
+
+_WAV_CACHE = None
+
+
+def demo_wav():
+    """4s of a quiet 440 Hz tone, 44100 Hz / 16-bit / stereo — served for
+    any /media/*.wav so fb2k can really play mock tracks and open
+    Properties (a 404 there reads as `Object not found`)."""
+    global _WAV_CACHE
+    if _WAV_CACHE is None:
+        buf = io.BytesIO()
+        with wave.open(buf, "wb") as w:
+            w.setnchannels(2)
+            w.setsampwidth(2)
+            w.setframerate(44100)
+            frames = bytearray()
+            for i in range(44100 * 4):
+                v = int(3000 * math.sin(2 * math.pi * 440 * i / 44100))
+                frames += struct.pack("<hh", v, v)
+            w.writeframes(bytes(frames))
+        _WAV_CACHE = buf.getvalue()
+    return _WAV_CACHE
 
 ROOT_DESC = """<?xml version="1.0"?>
 <root xmlns="urn:schemas-upnp-org:device-1-0">
@@ -159,10 +190,12 @@ def mixed_entries(host):
         "<upnp:originalTrackNumber>7</upnp:originalTrackNumber>"
         "<upnp:longDescription>Mock comment text</upnp:longDescription>"
         f"<upnp:albumArtURI>http://{host}/art/cover.png</upnp:albumArtURI>"
-        '<res protocolInfo="http-get:*:audio/mpeg:*" duration="0:03:30.000"'
-        ' size="8400000" bitrate="40000" bitsPerSample="16"'
+        # DIDL duration is deliberately 3:30 while the served WAV is 4s:
+        # the gap proves which value came from the hint vs the decoder.
+        '<res protocolInfo="http-get:*:audio/wav:*" duration="0:03:30.000"'
+        ' size="705644" bitrate="176400" bitsPerSample="16"'
         ' sampleFrequency="44100" nrAudioChannels="2">'
-        f"http://{host}/media/rich-track.mp3</res></item>",
+        f"http://{host}/media/rich-track.wav</res></item>",
         # Audio item with no <res> at all: add must skip it and report it.
         '<item id="nores-track" parentID="mixed" restricted="1">'
         "<dc:title>No Resource Track（應被略過）</dc:title>"
@@ -170,8 +203,8 @@ def mixed_entries(host):
         '<item id="plain-track" parentID="mixed" restricted="1">'
         "<dc:title>Plain Track</dc:title>"
         "<upnp:class>object.item.audioItem.musicTrack</upnp:class>"
-        '<res protocolInfo="http-get:*:audio/mpeg:*" duration="0:02:00.000">'
-        f"http://{host}/media/plain-track.mp3</res></item>",
+        '<res protocolInfo="http-get:*:audio/wav:*" duration="0:00:04.000">'
+        f"http://{host}/media/plain-track.wav</res></item>",
     ]
 
 
@@ -180,8 +213,8 @@ def slow_entries(host):
         f'<item id="slow-{i}" parentID="slow" restricted="1">'
         f"<dc:title>Slow Track {i}</dc:title>"
         "<upnp:class>object.item.audioItem.musicTrack</upnp:class>"
-        '<res protocolInfo="http-get:*:audio/mpeg:*" duration="0:03:00.000">'
-        f"http://{host}/media/slow-{i}.mp3</res></item>"
+        '<res protocolInfo="http-get:*:audio/wav:*" duration="0:00:04.000">'
+        f"http://{host}/media/slow-{i}.wav</res></item>"
         for i in (1, 2)
     ]
 
@@ -224,6 +257,8 @@ class MockUpnpHandler(BaseHTTPRequestHandler):
             self._send(200, ROOT_DESC)
         elif self.path == "/art/cover.png":
             self._send(200, PNG_COVER, "image/png")
+        elif self.path.startswith("/media/") and self.path.endswith(".wav"):
+            self._send(200, demo_wav(), "audio/wav")
         else:
             self._send(404, "<html><body>Not Found</body></html>", "text/html")
 

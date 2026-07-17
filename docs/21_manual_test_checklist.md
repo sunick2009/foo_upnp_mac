@@ -49,6 +49,11 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 - `Mixed Fixtures`：`rich-track`（全 metadata 欄位 + albumArtURI +
   bitrate/samplerate/bit depth/channels）、`nores-track`（無 `<res>`，
   加入時應被略過並計數）、`plain-track`。
+- `mixed` 與 `slow` 的曲目為**真實可播放 WAV**（440 Hz、4 秒、
+  44100/16-bit/stereo，由 `/media/*.wav` 提供）——可實際播放與開
+  Properties（驗 `%comment%` 等欄位）。`rich-track` 的 DIDL duration
+  刻意標 3:30 而實際檔案 4 秒，用來區分 hint 與 decoder 來源。
+  `music` 與 `bigtree` 的 URL 仍為假（404），播放失敗屬預期。
 - `Broken (SOAP fault)`：展開時 server 回 SOAP fault 701。
 - `Slow (5s per browse)`：每次 Browse 延遲 5 秒，用來捕捉「載入中…」
   與驗證 UI 不阻塞。
