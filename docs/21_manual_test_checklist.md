@@ -18,9 +18,9 @@
 > **驗收紀錄（2026-07-17）**
 > E2E 實測（詳見文末「本次 E2E 測試紀錄」）：真實 server 瀏覽、播放、
 > seek、resource 摘要、browser/playlist 封面、連線失敗處理、
-> 非 UPnP URL 錯誤通過。發現 4 個追蹤問題（雙擊錯誤列不重試、
-> 遞迴加入未顯示已掃描資料夾數、URL 欄位關閉時只存 `http://`、
-> 疑似視窗生命週期問題）。
+> 非 UPnP URL 錯誤通過。2026-07-17 追加驗證確認 URL 鍵盤編輯保存、
+> 雙擊錯誤列手動重試與取消遞迴加入均可運作；完整遞迴掃描仍受真實
+> server 的 ContentDirectory timeout 影響，視窗關閉後的生命週期問題仍存在。
 **前置：** component 已安裝（`~/Library/foobar2000-v2/user-components/
 foo_dms_browser.component`）並重啟 foobar2000。
 自動化已涵蓋的部分（adapter 邏輯、載入不崩潰）不在此清單。
@@ -48,6 +48,8 @@ python3 tools/mock_upnp_server.py 8200
 - [x] **重啟 foobar2000**，資料仍在（cfg_var 持久化）。
 - [x] 選取一列按「−」可刪除。
 - [x] 名稱含中文/特殊字元（`"`、`\`）存取正常。
+- [x] 以實體鍵盤直接輸入完整 URL，未失焦即關閉 Preferences，重開後 URL
+      完整保存；編輯後切換到另一個 Preferences 頁面也完整保存。
 
 ## 3. Browser 視窗（ADR-014）
 
@@ -57,9 +59,14 @@ python3 tools/mock_upnp_server.py 8200
 - [x] 未設定 server 時，狀態列提示到 Preferences 新增。
 - [x] 選擇 server 後根節點自動展開，顯示頂層 container。
 - [ ] 展開 container 顯示「載入中…」後填入子項（不卡 UI，
-      展開期間可捲動、可切歌）。
+      展開期間可捲動、可切歌）。本次真實 server 的 309 項 Playback list
+      展開很快完成，已實際執行捲動並確認播放狀態持續，但未捕捉到載入中
+      畫面的同時狀態，故不勾選完整要求。
 - [ ] 選取含 `albumArtURI` 的曲目後，browser 底部顯示 album art 縮圖與
-      title/artist/album/date；快速切換曲目不會殘留上一張圖。
+      title/artist/album/date；快速切換曲目不會殘留上一張圖。另見下方
+      已確認項目與額外問題。
+- [x] 在兩個不同含封面的真實專輯間快速切換，封面影像更新為目前曲目，
+      未觀察到上一張封面殘留。
 - [x] 選取曲目時，browser 底部顯示實際會播放的 resource 摘要
       （MIME、duration、sample rate、bit depth、channels；欄位依 server
       提供資料而定）。
@@ -81,9 +88,11 @@ python3 tools/mock_upnp_server.py 8200
 - [ ] 若加入範圍內存在沒有可播放 HTTP resource 的 item，狀態列顯示略過
       數量。
 - [ ] Container 右鍵「遞迴加入所有曲目」→ 狀態列顯示已掃描資料夾數與
-      已找到曲目數，完成後整棵子樹的曲目加入 playlist。
-- [ ] 遞迴加入進行中按「取消加入」→ 狀態列顯示取消，且不加入 partial
-      結果。
+      已找到曲目數，完成後整棵子樹的曲目加入 playlist。本次可看到即時
+      計數，但完整掃描於 123 個資料夾／1715 首時遇到 server timeout，未
+      取得最終完成訊息。
+- [x] 遞迴加入進行中按「取消加入」→ 狀態列顯示「已取消「播放列表」遞迴
+      加入，未加入曲目」，且取消後播放清單仍無 partial 結果。
 - [ ] 遞迴加入達 10,000 首或 10,000 個 container 上限時，狀態列標示
       已達掃描上限。
 - [x] 加入含 `albumArtURI` 的曲目後，playlist/Now Playing 顯示封面
@@ -98,9 +107,11 @@ python3 tools/mock_upnp_server.py 8200
 - [x] Server 關機/拔線後展開節點 → 節點顯示「⚠️ 連線失敗…」，
       fb2k console 有詳細記錄（含實際請求的 URL），**沒有** modal 彈窗。
 - [x] 失敗後**不會自動重試**（console 不刷屏、不重複打 server）。
-- [ ] 雙擊錯誤列或右鍵「重新載入」→ 重試一次。
-      （2026-07-17：雙擊未觀察到重新請求；僅根節點右鍵「重新載入」
-      可重試，見文末追蹤問題。）
+- [x] 雙擊錯誤列或右鍵「重新載入」→ 重試一次。
+      本次以實際 server IP 的未監聽 port `2999` 模擬斷線，雙擊錯誤子列
+      與失敗 container 列各只產生一筆
+      `DMS Browser: manual retry objectId="0"`；恢復 `:2333` 後根節點
+      成功重新載入。未直接關閉遠端 server。
 - [x] 在 Preferences 修正 URL 後切回瀏覽視窗 → 自動套用新清單，
       不需重開視窗。
 - [x] Preferences 填入非 UPnP 的 URL（如 https://example.com）→
@@ -143,22 +154,42 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
 - 清空 server 清單時，顯示「尚未設定伺服器 — Preferences → Tools →
   DMS Browser 新增」。
 - `https://example.com` 顯示 device description 解析錯誤，未崩潰。
+- 實體鍵盤直接輸入完整 URL 後立即關閉 Preferences，重開後保留
+  `http://10.102.0.10:2333/DeviceDescription.xml`；編輯後切換到
+  Components 頁面再關閉，重開後仍保留完整 URL。
+- 以 `http://10.102.0.10:2999/DeviceDescription.xml` 模擬真實 server
+  斷線時，錯誤子列與失敗的 `main` container 列各雙擊一次，Console 分別
+  出現且各只出現一筆 `DMS Browser: manual retry objectId="0"`。改回
+  真實 `:2333` 後切換 server，根節點恢復正常載入。
+- `播放列表` 的直接加入顯示「沒有可播放的項目」，證實不會遞迴；遞迴
+  取消則顯示「未加入曲目」，取消後目前 playlist table 仍為空。
+- 在真實 server 的兩個不同專輯間切換有封面曲目，封面影像更新正確，
+  未看到上一張封面殘留。播放期間切換到 DMS Browser 並展開 309 項
+  Playback list 後，返回主視窗仍顯示 PCM 1411kbps、44100Hz stereo，
+  播放未中斷。
+- DMS Browser 關閉前後的 Computer Use screenshot 尺寸均為 680×488，
+  尺寸看來有保留；但目前可及性資料無法提供螢幕座標，位置未能獨立驗證。
 
 ### 需要追蹤的問題
 
-- 關閉 Preferences 或 layout Preview 後，foobar2000 程序仍在執行，但曾
-  出現主視窗無法被電腦控制介面重新取得的情況，需重啟程序才能繼續操作。
-  尚未判定是元件視窗生命週期問題或控制工具限制。
-- URL 欄位直接編輯後立即關閉，曾只保存 `http://`；先讓欄位失焦後可
-  完整保存。需以實際鍵盤輸入補測關閉時的 commit 行為。
-  **→ 已修（commit 89b410c）：viewWillDisappear 強制 commit 編輯中欄位；
-  待真機驗證。**
-- 錯誤列直接雙擊未觀察到明確重新請求，但右鍵根節點的「重新載入」可
-  重新執行一次請求。
-  **→ 已修（commit 89b410c）：雙擊失敗的 container 列本身也會重試，
-  且手動重試會寫入 console；待真機驗證。**
-- 遞迴加入結果顯示已加入曲目數，但未顯示清單要求的已掃描資料夾數。
-  **→ 已修（commit 89b410c）：完成訊息加入已掃描資料夾數；待真機驗證。**
+- 關閉 DMS Browser 獨立視窗（Close 按鈕或 Window → Close）後，foobar2000
+  程序仍在執行，但 Computer Use 曾無法重新取得任何主視窗，需重啟程序
+  才能繼續操作。尚未判定是元件視窗生命週期問題或控制工具限制。
+- URL 直接鍵盤編輯並立即關閉、以及切換 Preferences 頁面保存均已通過；
+  但在 URL 欄位仍有焦點時關閉 Preferences，仍可能觸發上述視窗不可取得
+  的問題，這是 UI 生命週期問題，不再是 URL 欄位只保存 `http://`。
+- 快速切換不同 container 的曲目時，封面影像會更新，但詳細區底部的父
+  container 摘要曾仍顯示上一個 container「伝」，而目前選取曲目已屬於
+  「奉」。這是額外的 UI 狀態殘留問題，需另行修正或確認設計意圖。
+  **→ 已釐清（commit a52f79b）：該行是狀態列，設計上顯示「上次載入完成
+  的 container」而非目前選取；措辭改為「已載入「X」：N 個項目」消除
+  歧義；待真機驗證。**
+- 遞迴加入的即時狀態已包含資料夾與曲目計數，例如「正在遞迴掃描『播放列表』：
+  123 個資料夾，1715 首」；但完整真實 server 掃描在此進度遇到
+  ContentDirectory control URL timeout，未能驗證最終完成訊息及整棵子樹
+  的完整加入。
+  **→ 已修（commit a52f79b）：component 的傳輸 timeout 由 10s 放寬為
+  30s（連線維持 10s，斷線回饋不變慢）；待真機重跑完整掃描驗證。**
 
 ### 尚未完成的覆蓋
 
@@ -170,5 +201,7 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
 - 未逐欄驗證 `%artist%`、`%album artist%`、`%date%`、`%tracknumber%`、
   `%comment%` 及所有 technical info 欄位。
 
-**清理結果：** 已清除本次加入的測試曲目，恢復 `main` 與 mock server 設定，
-並停止 mock server。
+**清理結果：** 已移除本次新增的 `Keyboard Save Test` server 設定列；`main`
+與 mock server 設定保留原值，mock server 未啟動。取消及 timeout 遞迴操作本身
+未留下 partial 結果；之後為播放測試加入的單首 `dusk` 仍位於既有的
+`New Playlist` 測試清單中，未刪除原有 playlist 名稱或其他使用者資料。
