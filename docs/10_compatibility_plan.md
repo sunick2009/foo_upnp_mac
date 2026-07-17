@@ -48,6 +48,9 @@
 \* 2026-07-03 由 component（foo_dms_browser 0.1.0 in foobar2000 v2.25.8
 macOS）實測：browser 加入 playlist 後可直接播放。此前 CLI 階段已由
 HTTP HEAD 驗證 `Accept-Ranges: bytes` + 正確 `Content-Type`。
+2026-07-17 由 component（0.2.0-dev，同環境 ARM64）實測 seek 可移動至
+指定時間，播放狀態顯示 PCM 1411 kbps / 44100 Hz / stereo
+（見 `docs/21_manual_test_checklist.md` E2E 紀錄）。
 
 ### foo_upnp 0.99.49 實測紀錄（2026-07-03）
 
