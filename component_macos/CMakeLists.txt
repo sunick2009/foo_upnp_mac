@@ -60,4 +60,13 @@ if(ENABLE_FB2K_COMPONENT)
         fb2k_pfc
         "-framework Cocoa"
     )
+    # Re-sign after every (re)link: an incremental rebuild replaces the
+    # binary but keeps the previous signature, so the bundle fails
+    # `codesign --verify` until signed again.
+    add_custom_command(TARGET foo_dms_browser POST_BUILD
+        COMMAND codesign --force --deep --sign -
+                "$<TARGET_BUNDLE_DIR:foo_dms_browser>"
+        COMMENT "Ad-hoc signing foo_dms_browser.component"
+        VERBATIM
+    )
 endif()
