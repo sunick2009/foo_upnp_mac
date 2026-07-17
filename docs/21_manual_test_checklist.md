@@ -215,3 +215,70 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
 與 mock server 設定保留原值，mock server 未啟動。取消及 timeout 遞迴操作本身
 未留下 partial 結果；之後為播放測試加入的單首 `dusk` 仍位於既有的
 `New Playlist` 測試清單中，未刪除原有 playlist 名稱或其他使用者資料。
+
+## 下一輪手動驗證步驟（2026-07-17 準備，尚未執行）
+
+**待驗證的修復：** commit a52f79b（傳輸 timeout 10s→30s、狀態列
+「已載入」措辭）與 bca84a0（mock fixture 擴充）。
+
+### 前置
+
+1. 確認安裝的是含上述 commit 的 build（`~/Library/.../user-components/`
+   已於 2026-07-17 18:53 更新），**重啟 foobar2000**。
+2. 啟動 mock server：`python3 tools/mock_upnp_server.py 8200`。
+3. Preferences 確認有 `http://127.0.0.1:8200/rootDesc.xml`（fixture 內容
+   見「環境」節）。
+
+### Mock 回合（~15 分鐘）
+
+1. **載入中不卡 UI**：先播放任一首歌，展開 `Slow (5s per browse)`。
+   - 預期：「載入中…」顯示約 5 秒，期間可捲動樹狀清單、播放不中斷。
+   - 通過 → 勾 §3「展開 container 顯示載入中…」。
+2. **逐欄位 metadata**：展開 `Mixed Fixtures`，雙擊
+   `Rich Track（全欄位）` 加入 playlist，逐欄核對：
+   - `%artist%` = Mock Artist、`%album artist%` = Mock Album Artist、
+     `%album%` = Mock Rich Album、`%date%` = 2024-05-06、
+     `%tracknumber%` = 7、`%comment%` = Mock comment text、
+     `%length_seconds%` = 210；technical info：samplerate 44100、
+     channels 2、bit depth 16。
+   - 選取該曲目時 browser 底部摘要顯示 MIME/時長/44100 Hz/16-bit/2 ch，
+     封面為紅色方塊（mock 提供的 PNG）。
+   - 通過 → 勾 §4「加入後檢查可用欄位」。
+3. **略過數量**：右鍵 `Mixed Fixtures` →「加入直接子項曲目」。
+   - 預期：狀態列「已加入 2 首…，略過 1 個不可播放項目」
+     （`nores-track` 無 `<res>`，應被略過）。
+   - 通過 → 勾 §4「略過數量」。
+4. **SOAP fault 經 UI**：展開 `Broken (SOAP fault)`。
+   - 預期：節點顯示 SOAP fault 701 訊息、無 modal 彈窗；雙擊錯誤列後
+     console 出現一筆 `DMS Browser: manual retry`（仍為 fault 屬預期）。
+   - 通過 → 勾 §5「mock SOAP fault」。
+5. **10,000 上限與完成訊息**：右鍵 `Big Tree (15000 tracks)` →
+   「遞迴加入所有曲目」。
+   - 預期：過程顯示「X 個資料夾，Y 首」即時計數；約 10 秒後完成訊息
+     為「已從「Big Tree…」遞迴加入 10000 首（掃描 ~101 個資料夾）
+     （已達掃描上限）」。
+   - 通過 → 勾 §4「10,000 上限」。
+6. **取消（重新確認）**：再對 `Big Tree` 遞迴加入一次，掃描中按
+   「取消加入」。
+   - 預期：「已取消…未加入曲目」，playlist 無 partial 結果。
+   - 順帶確認：展開過兩個 container 後選取另一個 container 的曲目，
+     狀態列措辭為「已載入「X」：N 個項目」，不再誤讀為目前選取。
+7. **清理**：刪除本輪加入的 mock 曲目（含一萬首）。
+
+### 真實 server 回合（~10 分鐘）
+
+8. **完整遞迴掃描**：對真實 server「播放列表」重跑上次在
+   123 資料夾／1715 首 timeout 的遞迴加入。
+   - 預期：30 秒傳輸 timeout 下掃描完成，出現含資料夾數的完成訊息，
+     整棵子樹曲目加入。
+   - 通過 → 勾 §4「遞迴加入所有曲目」，並在追蹤問題註記 timeout
+     修復已驗證。
+
+### 純手動定性（真滑鼠鍵盤，不用 Computer Use）
+
+9. **視窗生命週期**：手動關閉 DMS Browser 獨立視窗；手動關閉
+   Preferences（含 URL 欄位仍有焦點時）。
+   - 若主視窗完全正常 → 將追蹤問題定性為 Computer Use 工具限制，
+     從清單移除；若異常 → 記錄重現步驟，開 issue。
+
+測畢將結果更新至上方對應 checkbox 與追蹤問題，或交由 agent 對帳。
