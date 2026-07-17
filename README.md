@@ -1,5 +1,7 @@
 # foo_dms_browser_mac
 
+[![ci](https://github.com/sunick2009/foo_upnp_mac/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sunick2009/foo_upnp_mac/actions/workflows/ci.yml)
+
 一個開發中的 foobar2000 macOS 原生 component：手動新增 UPnP / DLNA
 Media Server 的 device description URL，瀏覽 ContentDirectory，
 並將遠端音樂加入 foobar2000 playlist 播放。
@@ -40,10 +42,23 @@ multi-res 選擇、album art URL。詳見 `docs/10_compatibility_plan.md`。
 
 ## Install（使用者）
 
-從 [GitHub Releases](https://github.com/sunick2009/foo_upnp_mac/releases)
-下載 `.fb2k-component`，在 foobar2000 → Preferences → Components →
-Install… 安裝後重啟。目前提供 Apple Silicon (arm64) 版本；
+發佈的套件為 `foo_dms_browser-<版本>-arm64.fb2k-component`
+（`.component` bundle 的 zip 封裝，附 `.sha256` 校驗檔）。
+目前僅提供 Apple Silicon (arm64)、macOS 11.0+；
 Intel Mac 請依下節從原始碼編譯。
+
+取得方式（正式 Release 發佈前，可從 CI 下載每次 main 的建置）：
+
+1. [GitHub Releases](https://github.com/sunick2009/foo_upnp_mac/releases)
+   （v0.2.0 beta 起），或
+2. [Actions](https://github.com/sunick2009/foo_upnp_mac/actions/workflows/ci.yml)
+   → 選最新綠色 run → Artifacts → `foo_dms_browser-fb2k-component`。
+
+安裝：foobar2000 → Preferences → Components → Install… 選取
+`.fb2k-component`；若該路徑不可用，手動解壓後把
+`foo_dms_browser.component` 放到
+`~/Library/foobar2000-v2/user-components/`，重啟 foobar2000。
+驗證下載：`shasum -a 256 -c foo_dms_browser-<版本>-arm64.fb2k-component.sha256`。
 
 ## Build
 

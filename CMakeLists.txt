@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.20)
 
+# Beta release floor (docs/22): arm64 Macs all run 11.0+, and foobar2000
+# v2 for Mac requires newer than that anyway. Must be set before project().
+if(APPLE AND NOT DEFINED CMAKE_OSX_DEPLOYMENT_TARGET)
+    set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0" CACHE STRING
+        "Minimum macOS version for the component and CLI")
+endif()
+
 project(foo_dms_browser_mac_phase0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
