@@ -41,7 +41,7 @@
 | Server | Version | Browse | Playback | Metadata | Album Art | Pagination | Notes |
 |---|---|---:|---:|---:|---:|---:|---|
 | foobar2000 UPnP Media Server (foo_upnp) | 0.99.49 | ✅ | ✅* | ✅ | ✅ (URL 取得) | ✅ | 見下方 quirks |
-| MiniDLNA / ReadyMedia | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
+| MiniDLNA / ReadyMedia | 1.3.3 | ✅ (CLI) | ⏳ 元件級待測 | ✅ | ✅ (URL 取得) | ✅ | 見下方 quirks；CLI 級 2026-07-18 實測 |
 | Jellyfin DLNA | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
 | Plex DLNA | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
 
@@ -77,6 +77,53 @@ CLI 對 `http://10.102.0.10:2333/DeviceDescription.xml` 全部通過：
    `audio/L16;rate=44100;channels=2`。mimeType 欄位會包含完整參數字串，
    優先清單比對是 exact match，所以帶參數的 mime 走 fallback 路徑。
 4. ObjectID 格式為路徑狀（`0/0/58/0I`），非 flat ID。
+
+### MiniDLNA 1.3.3 實測紀錄（2026-07-18，CLI 級）
+
+環境：docker `vladgh/minidlna`（OrbStack，port 對映 18300→8200），
+media 為 ffmpeg 產生的 13 首含 tag 測試庫（12 MP3 + 1 FLAC，內嵌封面、
+中日文標題）。Device description：`http://<host>:8200/rootDesc.xml`
+（與 mock 相同路徑）。
+
+- **root Browse**：4 個 container（Browse Folders / Music / Pictures /
+  Video）。
+- **child Browse**：`Music` → Album / All Music / Artist / Folders /
+  Genre / Playlists / Recently Added；`All Music (1$4)` 13 首全對。
+- **pagination**：`--starting-index 5 --requested-count 3` 正確回傳
+  `number_returned=3, total_matches=13`。
+- **metadata**：title / album / date（正規化為 `2024-01-01`）/
+  originalTrackNumber 完整；artist 對應見 quirks。
+- **中文 / 日文標題**：`第二首歌`、`三曲目のテスト` 正常。
+- **albumArtURI**：absolute URL（`/AlbumArt/…jpg`），HTTP 200
+  image/jpeg 可下載。
+- **resource**：每 item 單一 `<res>`（不轉碼）；MP3 帶完整 DLNA 參數
+  protocolInfo，FLAC 為 `audio/x-flac`（已在 ResourceSelector 優先
+  清單）。duration/size/bitrate/sampleFrequency/nrAudioChannels 齊全。
+- **HTTP Range**：`Accept-Ranges: bytes`，`Range: bytes=0-99` 回 206。
+- **SOAP fault**：不存在的 ObjectID 回標準 `701 No such object`。
+- **fixtures**：真實回應已入 repo —
+  `tests/fixtures/didl_lite/minidlna_133_audio_items.xml`、
+  `tests/fixtures/soap_responses/minidlna_133_browse_response.xml`，
+  parser 回歸測試 `parses a real MiniDLNA 1.3.3 browse payload`。
+- **元件級待測**（fb2k UI）：加入 playlist、播放、seek、封面顯示
+  （可直接用上述 docker 環境，見 docs/21）。
+
+### MiniDLNA quirks（相容性差異）
+
+1. **ID3 tag 對應**：album artist（TPE2）放在 `upnp:artist`，
+   track artist（TPE1）放在 `dc:creator` —— 與 foo_upnp 相反習慣。
+   元件顯示的 `%artist%` 會是 album artist；不可假設 `upnp:artist`
+   一定是曲目演出者。
+2. **ObjectID 用 `$` 分隔**（`1$4$0`），並有 `refID` 屬性
+   （同一曲目在多個 view 中互相引用）。
+3. **protocolInfo 第 4 欄帶完整 DLNA 參數**
+   （`DLNA.ORG_PN=MP3;DLNA.ORG_OP=01;…`）；mimeType 欄位（第 3 欄）
+   維持乾淨，不影響優先清單比對。
+4. **FLAC 的 mime 是 `audio/x-flac`**（非 `audio/flac`）。
+5. **resource / albumArt URL 以 server 綁定介面的 IP 產生**
+   （容器內為容器 IP）；跨 NAT / port-forward 環境需注意 URL
+   可達性——這是部署議題而非元件缺陷。
+6. **date 正規化**：tag 只有年份 `2024` 時回 `2024-01-01`。
 
 ## 跨網段說明
 

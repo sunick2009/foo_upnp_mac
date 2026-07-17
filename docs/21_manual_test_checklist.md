@@ -162,6 +162,18 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 - [x] 真實 foo_upnp server（`http://10.102.0.10:2333/DeviceDescription.xml`
       ，內網）：root browse、中日文標題、多 res 選擇（WAV 優先於
       L16）、加入後可播放。
+- [ ] MiniDLNA 1.3.3（docker，CLI 級 2026-07-18 已通過，見 docs/10）：
+      元件級 browse → 加入 → 播放 → seek → 封面。步驟：
+
+      ```bash
+      # 啟動（media 庫見 docs/10 MiniDLNA 紀錄；容器已存在時直接 start）
+      docker start minidlna-test 2>/dev/null || echo "見 docs/10 環境說明"
+      # Preferences 加 server：http://127.0.0.1:18300/rootDesc.xml
+      ```
+
+      驗證點：Music → All Music 13 首、中日文標題、`%artist%` 顯示
+      album artist（MiniDLNA quirk）、封面縮圖、加入後播放 4 秒
+      正弦音、seek、FLAC 曲目（`audio/x-flac`）可選可播。
 
 ## 已知限制與待驗證
 

@@ -94,6 +94,45 @@ TEST_CASE("preserves unicode titles and unescapes entities", "[parser][didl]") {
     CHECK(objects[2].title == "Amp & Volt <Live>");
 }
 
+// Captured verbatim from MiniDLNA 1.3.3 (docker vladgh/minidlna,
+// 2026-07-18, issue #6). Notable shapes: refID attribute, dlna
+// namespace on albumArtURI (dlna:profileID), DLNA parameters as the
+// 4th protocolInfo field, and MiniDLNA's tag mapping — ID3 album
+// artist (TPE2) lands in upnp:artist while track artist (TPE1) lands
+// in dc:creator.
+TEST_CASE("parses a real MiniDLNA 1.3.3 browse payload", "[parser][didl]") {
+    auto objects =
+        DidlLiteParser::parse(readFixture("didl_lite/minidlna_133_audio_items.xml"));
+
+    REQUIRE(objects.size() == 4);
+    const auto& first = objects[0];
+    CHECK(first.id == "1$4$0");
+    CHECK(first.title == "First Song");
+    CHECK(first.type == UpnpObjectType::AudioItem);
+    REQUIRE(first.artist.has_value());
+    CHECK(*first.artist == "Mini Album Artist"); // TPE2 via upnp:artist
+    REQUIRE(first.creator.has_value());
+    CHECK(*first.creator == "Mini Artist"); // TPE1 via dc:creator
+    CHECK(first.album == "Mini Test Album");
+    CHECK(first.date == "2024-01-01"); // MiniDLNA normalizes "2024"
+    CHECK(first.originalTrackNumber == "1");
+    REQUIRE(first.albumArtUri.has_value());
+    CHECK(first.albumArtUri->find("/AlbumArt/") != std::string::npos);
+
+    REQUIRE(first.resources.size() == 1);
+    const auto& res = first.resources[0];
+    // DLNA params are the 4th protocolInfo field; mimeType stays clean.
+    CHECK(res.mimeType == "audio/mpeg");
+    CHECK(res.protocolInfo.find("DLNA.ORG_PN=MP3") != std::string::npos);
+    CHECK(res.duration == "0:00:04.075");
+    CHECK(res.bitrate == 128000u);
+    CHECK(res.sampleFrequency == 44100u);
+    CHECK(res.nrAudioChannels == 2u);
+
+    CHECK(objects[1].title == "第二首歌");
+    CHECK(objects[2].title == "三曲目のテスト");
+}
+
 TEST_CASE("empty input yields empty vector", "[parser][didl]") {
     CHECK(DidlLiteParser::parse("").empty());
 }
