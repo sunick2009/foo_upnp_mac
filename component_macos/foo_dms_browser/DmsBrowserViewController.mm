@@ -486,11 +486,26 @@ struct RecursiveAddJob {
         // Error row: explicit retry of the failed parent.
         DmsTreeNode* parent = [_outlineView parentForItem:node];
         if (parent != nil && parent.state == DmsNodeStateFailed) {
-            parent.state = DmsNodeStateIdle;
-            [self loadChildrenOfNode:parent];
+            [self retryFailedNode:parent];
         }
+        return;
+    }
+    if ([node isContainer] && node.state == DmsNodeStateFailed) {
+        // Double-clicking the failed container row itself is as explicit
+        // a gesture as its error child row; willExpand still refuses
+        // Failed nodes, so this cannot re-enter the auto-retry loop.
+        [self retryFailedNode:node];
+        return;
     }
     // Container double-click: the default expand/collapse toggle applies.
+}
+
+- (void)retryFailedNode:(DmsTreeNode*)node {
+    FB2K_console_formatter()
+        << "DMS Browser: manual retry objectId=\""
+        << (node.objectId.UTF8String ?: "0") << "\"";
+    node.state = DmsNodeStateIdle;
+    [self loadChildrenOfNode:node];
 }
 
 - (void)rebuildContextMenu:(NSMenu*)menu {
@@ -641,9 +656,12 @@ struct RecursiveAddJob {
     NSString* skipped = added.skipped > 0
         ? [NSString stringWithFormat:@"，略過 %zu 個不可播放項目", added.skipped]
         : @"";
+    // Fast scans overwrite the live progress line almost immediately, so
+    // the completion line must carry the container count itself.
     _statusLabel.stringValue = [NSString
-        stringWithFormat:@"已從「%@」遞迴加入 %zu 首%@%@",
-                         rootTitle, added.added, skipped, suffix];
+        stringWithFormat:@"已從「%@」遞迴加入 %zu 首（掃描 %zu 個資料夾）%@%@",
+                         rootTitle, added.added, result.containersVisited,
+                         skipped, suffix];
 }
 
 - (void)addObjects:(std::vector<upnp::UpnpObject>)objects

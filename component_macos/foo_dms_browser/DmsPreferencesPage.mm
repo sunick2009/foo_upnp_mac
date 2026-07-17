@@ -89,6 +89,18 @@
     dms::saveServers(_servers);
 }
 
+- (void)viewWillDisappear {
+    [super viewWillDisappear];
+    // Closing Preferences (or switching pages) while a cell is still in
+    // edit mode never fires controlTextDidEndEditing, so the typed value
+    // is dropped — a fresh row then persists as just "http://". Resign
+    // the field editor to commit the pending edit before teardown.
+    NSWindow* window = self.view.window;
+    if (window != nil && ![window makeFirstResponder:nil]) {
+        [window endEditingFor:nil];
+    }
+}
+
 - (void)onAddRemove:(NSSegmentedControl*)sender {
     if (sender.selectedSegment == 0) {
         _servers.push_back({"新伺服器", "http://"});
