@@ -63,9 +63,14 @@ MiniDLNA/Jellyfin/Plex 尚為 unknown（issue #6）。
       bundle 結構、arm64、`_foobar2000_get_interface`、
       `codesign --verify --deep --strict` 均通過。
 - [ ] 乾淨環境 clean-install 測試（不使用本機 build 目錄）：
+  - [x] 手動路徑已驗證（2026-07-18，開發機）：下載 run 29612715910 的
+        artifact → `shasum -c` 通過 → `ditto -x -k` 解壓到
+        `user-components/` → 解壓後 bundle 通過
+        `codesign --verify --deep --strict` 與 arm64 檢查。
   - [ ] Preferences → Components → Install… 接受 `.fb2k-component`
         （或記錄不支援並改用手動路徑）。
-  - [ ] Components 列表顯示 DMS Browser 0.2.0。
+  - [ ] Components 列表顯示 DMS Browser 0.2.0（目前安裝為 artifact 版
+        0.2.0-dev，重啟後可先確認註冊正常）。
   - [ ] Preferences 頁、layout element、browse、加入、播放、封面正常。
 - [ ] 發佈 GitHub Release：附上套件、`.sha256`、本文件 changelog 節。
 - [ ] 發佈前把 `ComponentEntry.mm` 版本 `0.2.0-dev` → `0.2.0`。
