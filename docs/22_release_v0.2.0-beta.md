@@ -53,9 +53,15 @@ MiniDLNA/Jellyfin/Plex 尚為 unknown（issue #6）。
 
 ## 驗證紀錄
 
-- [ ] CI run（Release build + smoke check + 打包）通過：
-      run URL：＿＿＿（發佈時填入）
-- [ ] artifact SHA-256 與 `.sha256` 檔一致。
+- [x] CI run（Release build + smoke check + 打包）通過：
+      <https://github.com/sunick2009/foo_upnp_mac/actions/runs/29612715910>
+      （commit 72545ea，2026-07-18；Linux 測試 + macOS build/test/
+      codesign/smoke check/打包全綠）。
+- [x] artifact SHA-256 與 `.sha256` 檔一致（2026-07-18 下載驗證：
+      `c3b929176c3f4d172a105940b87a54c7f527f3065097faa333ce1c151bfdc9ff`
+      `foo_dms_browser-0.2.0-dev-arm64.fb2k-component`）；解壓後
+      bundle 結構、arm64、`_foobar2000_get_interface`、
+      `codesign --verify --deep --strict` 均通過。
 - [ ] 乾淨環境 clean-install 測試（不使用本機 build 目錄）：
   - [ ] Preferences → Components → Install… 接受 `.fb2k-component`
         （或記錄不支援並改用手動路徑）。
