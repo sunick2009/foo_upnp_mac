@@ -15,7 +15,13 @@ namespace dms {
 class BrowseSession {
 public:
     explicit BrowseSession(std::string rootDescUrl)
-        : rootDescUrl_(std::move(rootDescUrl)) {}
+        : rootDescUrl_(std::move(rootDescUrl)),
+          // A busy server can take >10s to render one 100-item Browse
+          // page (killed a real recursive scan at 123 containers), so
+          // allow 30s per transfer. Connect stays at 10s so a dead
+          // server still fails fast.
+          http_(upnp::HttpClient::Options{.timeoutSeconds = 30,
+                                          .connectTimeoutSeconds = 10}) {}
 
     // Fetches the device description on first use. Throws upnp errors.
     void connectIfNeeded() {

@@ -51,12 +51,13 @@ struct CurlHeaderList {
     ~CurlHeaderList() { curl_slist_free_all(list); }
 };
 
-HttpClient::Response perform(CURL* curl, const std::string& url, long timeoutSeconds) {
+HttpClient::Response perform(CURL* curl, const std::string& url,
+                             const HttpClient::Options& options) {
     HttpClient::Response response;
 
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeoutSeconds);
-    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeoutSeconds);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, options.timeoutSeconds);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, options.connectTimeoutSeconds);
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 5L);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeToString);
@@ -67,7 +68,7 @@ HttpClient::Response perform(CURL* curl, const std::string& url, long timeoutSec
     CURLcode code = curl_easy_perform(curl);
     if (code == CURLE_OPERATION_TIMEDOUT) {
         throw HttpException("request to " + url + " timed out after " +
-                            std::to_string(timeoutSeconds) + "s");
+                            std::to_string(options.timeoutSeconds) + "s");
     }
     if (code != CURLE_OK) {
         throw HttpException("request to " + url + " failed: " +
@@ -91,7 +92,7 @@ HttpClient::HttpClient(Options options) : options_(std::move(options)) {
 HttpClient::Response HttpClient::get(const std::string& url) {
     CurlHandle handle;
     curl_easy_setopt(handle.curl, CURLOPT_USERAGENT, options_.userAgent.c_str());
-    return perform(handle.curl, url, options_.timeoutSeconds);
+    return perform(handle.curl, url, options_);
 }
 
 HttpClient::Response HttpClient::post(const std::string& url,
@@ -110,7 +111,7 @@ HttpClient::Response HttpClient::post(const std::string& url,
     }
     curl_easy_setopt(handle.curl, CURLOPT_HTTPHEADER, headers.list);
 
-    return perform(handle.curl, url, options_.timeoutSeconds);
+    return perform(handle.curl, url, options_);
 }
 
 } // namespace upnp

@@ -21,7 +21,8 @@ public:
     };
 
     struct Options {
-        long timeoutSeconds = 10;
+        long timeoutSeconds = 10;        // whole-transfer limit
+        long connectTimeoutSeconds = 10; // TCP connect limit
         std::string userAgent = "foo_dms_browser_mac/0.1";
     };
 

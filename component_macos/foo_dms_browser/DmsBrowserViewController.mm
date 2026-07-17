@@ -343,8 +343,11 @@ struct RecursiveAddJob {
                 @"⚠️ 內容過多，僅載入前 10,000 項"]];
         }
         node.children = children;
+        // Prefix with 已載入: this line describes the last completed
+        // load, and without it users read it as describing the current
+        // selection once they click into another container.
         _statusLabel.stringValue = [NSString
-            stringWithFormat:@"「%@」%lu 個項目", node.title,
+            stringWithFormat:@"已載入「%@」：%lu 個項目", node.title,
                              (unsigned long)result.objects.size()];
     }
     [_outlineView reloadItem:node reloadChildren:YES];
