@@ -27,7 +27,7 @@ struct RecursiveBrowseResult {
 };
 
 using FetchChildrenFn = std::function<PagedBrowseResult(const std::string&)>;
-using CancellationFn = std::function<bool()>;
+// CancellationFn comes from BrowsePager.hpp (shared with the pager).
 using ProgressFn = std::function<void(const RecursiveBrowseProgress&)>;
 
 // Breadth-first recursive BrowseDirectChildren collector for M4 container add.

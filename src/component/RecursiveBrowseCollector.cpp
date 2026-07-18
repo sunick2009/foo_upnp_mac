@@ -45,6 +45,14 @@ RecursiveBrowseResult collectRecursiveChildren(
 
         PagedBrowseResult page = fetchChildren(objectId);
         if (page.truncated) result.truncated = true;
+        // A cancellable fetch can observe the cancel mid-pagination —
+        // including on the last pending container, where the loop would
+        // otherwise exit with result.cancelled still false and the
+        // caller would add the partial collection despite the cancel.
+        if (page.cancelled) {
+            result.cancelled = true;
+            break;
+        }
 
         for (const auto& object : page.objects) {
             if (cancelled(isCancelled)) {

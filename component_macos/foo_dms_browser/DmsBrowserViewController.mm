@@ -86,7 +86,7 @@ NSString* describePlaybackResource(const upnp::UpnpObject& object) {
                            : @"HTTP resource";
 }
 
-struct RecursiveAddJob {
+struct AddJob {
     std::atomic_bool cancelled{false};
 };
 
@@ -107,7 +107,7 @@ struct RecursiveAddJob {
     DmsTreeNode* _rootNode; // nil until a server is selected
 
     std::shared_ptr<dms::BrowseSession> _session;
-    std::shared_ptr<RecursiveAddJob> _recursiveAddJob;
+    std::shared_ptr<AddJob> _addJob;
     std::vector<component::ServerEntry> _servers;
     NSInteger _generation; // bumped on server switch; stale results dropped
     NSInteger _artGeneration;
@@ -270,8 +270,8 @@ struct RecursiveAddJob {
     if (index < 0 || index >= (NSInteger)_servers.size()) return;
     const auto& server = _servers[(size_t)index];
     _session = std::make_shared<dms::BrowseSession>(server.url);
-    if (_recursiveAddJob) _recursiveAddJob->cancelled = true;
-    _recursiveAddJob.reset();
+    if (_addJob) _addJob->cancelled = true;
+    _addJob.reset();
     _cancelAddButton.hidden = YES;
     ++_generation;
     NSString* name = [NSString stringWithUTF8String:server.name.c_str()];
@@ -527,17 +527,17 @@ struct RecursiveAddJob {
         addDirect.target = self;
         // Loaded state is no longer required: unloaded containers fetch
         // their direct children on demand (issue #11).
-        addDirect.enabled = !_recursiveAddJob;
+        addDirect.enabled = !_addJob;
         NSMenuItem* addRecursive = [menu addItemWithTitle:@"遞迴加入所有曲目"
                                                    action:@selector(onAddRecursiveClicked:)
                                             keyEquivalent:@""];
         addRecursive.target = self;
-        addRecursive.enabled = !_recursiveAddJob;
+        addRecursive.enabled = !_addJob;
         NSMenuItem* reload = [menu addItemWithTitle:@"重新載入"
                                              action:@selector(onReloadClicked:)
                                       keyEquivalent:@""];
         reload.target = self;
-        reload.enabled = !_recursiveAddJob;
+        reload.enabled = !_addJob;
     }
 }
 
@@ -565,10 +565,10 @@ struct RecursiveAddJob {
 }
 
 - (void)startDirectAddForNode:(DmsTreeNode*)node {
-    if (_session == nullptr || _recursiveAddJob != nullptr) return;
+    if (_session == nullptr || _addJob != nullptr) return;
     auto session = _session;
-    auto job = std::make_shared<RecursiveAddJob>();
-    _recursiveAddJob = job;
+    auto job = std::make_shared<AddJob>();
+    _addJob = job;
     _cancelAddButton.hidden = NO;
     const NSInteger generation = _generation;
     const std::string objectId = node.objectId.UTF8String ?: "0";
@@ -580,7 +580,10 @@ struct RecursiveAddJob {
         component::PagedBrowseResult page;
         NSString* errorText = nil;
         try {
-            page = session->fetchChildren(objectId);
+            // Poll cancellation between pages so 取消加入 responds
+            // mid-fetch on large containers, not only afterwards.
+            page = session->fetchChildren(
+                objectId, [job] { return job->cancelled.load(); });
         } catch (...) {
             errorText = describeBrowseError();
             FB2K_console_formatter()
@@ -588,15 +591,16 @@ struct RecursiveAddJob {
                 << "\" failed, server=\"" << session->rootDescUrl().c_str()
                 << "\": " << errorText.UTF8String;
         }
+        const bool truncated = page.truncated;
         dispatch_async(dispatch_get_main_queue(), ^{
-            if (generation != _generation || _recursiveAddJob != job) return;
-            _recursiveAddJob.reset();
+            if (generation != _generation || _addJob != job) return;
+            _addJob.reset();
             _cancelAddButton.hidden = YES;
             if (errorText != nil) {
                 _statusLabel.stringValue = errorText;
                 return;
             }
-            if (job->cancelled.load()) {
+            if (page.cancelled || job->cancelled.load()) {
                 _statusLabel.stringValue = [NSString
                     stringWithFormat:@"已取消「%@」加入，未加入曲目", sourceTitle];
                 return;
@@ -605,6 +609,12 @@ struct RecursiveAddJob {
             // counts unplayable items, so the status line matches the
             // expanded-container path.
             [self addObjects:std::move(page.objects) sourceTitle:sourceTitle];
+            if (truncated) {
+                // The expanded path shows a truncation child row; the
+                // on-demand path must say it in the status line instead.
+                _statusLabel.stringValue = [_statusLabel.stringValue
+                    stringByAppendingString:@"（來源超過 10,000 項，僅處理前 10,000）"];
+            }
         });
     });
 }
@@ -612,12 +622,12 @@ struct RecursiveAddJob {
 - (void)onAddRecursiveClicked:(id)sender {
     DmsTreeNode* node = [self nodeAtRow:_outlineView.clickedRow];
     if (node == nil || ![node isContainer] || _session == nullptr ||
-        _recursiveAddJob != nullptr)
+        _addJob != nullptr)
         return;
 
     auto session = _session;
-    auto job = std::make_shared<RecursiveAddJob>();
-    _recursiveAddJob = job;
+    auto job = std::make_shared<AddJob>();
+    _addJob = job;
     _cancelAddButton.hidden = NO;
 
     const NSInteger generation = _generation;
@@ -631,8 +641,11 @@ struct RecursiveAddJob {
         NSString* errorText = nil;
         try {
             result = component::collectRecursiveChildren(
-                [session](const std::string& objectId) {
-                    return session->fetchChildren(objectId);
+                [session, job](const std::string& objectId) {
+                    // Cancellation also polls between pages inside one
+                    // container, not just between containers.
+                    return session->fetchChildren(
+                        objectId, [job] { return job->cancelled.load(); });
                 },
                 rootObjectId,
                 component::RecursiveBrowseOptions{
@@ -644,7 +657,7 @@ struct RecursiveAddJob {
                     const size_t containersVisited = progress.containersVisited;
                     const size_t tracksFound = progress.tracksFound;
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        if (generation != _generation || _recursiveAddJob != job) return;
+                        if (generation != _generation || _addJob != job) return;
                         _statusLabel.stringValue = [NSString
                             stringWithFormat:
                                 @"正在遞迴掃描「%@」：%zu 個資料夾，%zu 首",
@@ -671,8 +684,8 @@ struct RecursiveAddJob {
 }
 
 - (void)onCancelRecursiveAdd:(id)sender {
-    if (_recursiveAddJob) {
-        _recursiveAddJob->cancelled = true;
+    if (_addJob) {
+        _addJob->cancelled = true;
         _statusLabel.stringValue = @"正在取消遞迴加入…";
     }
 }
@@ -688,9 +701,9 @@ struct RecursiveAddJob {
                       root:(NSString*)rootTitle
                      error:(NSString*)errorText
                 generation:(NSInteger)generation
-                       job:(std::shared_ptr<RecursiveAddJob>)job {
-    if (generation != _generation || _recursiveAddJob != job) return;
-    _recursiveAddJob.reset();
+                       job:(std::shared_ptr<AddJob>)job {
+    if (generation != _generation || _addJob != job) return;
+    _addJob.reset();
     _cancelAddButton.hidden = YES;
 
     if (errorText != nil) {
