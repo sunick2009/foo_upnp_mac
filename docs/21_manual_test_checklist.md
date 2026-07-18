@@ -1,6 +1,6 @@
 # DMS Browser 手動測試清單（M4 進行中）
 
-**版本：** foo_dms_browser 0.2.0-dev
+**版本：** foo_dms_browser 0.2.0
 
 > **驗收紀錄（2026-07-03/04，foobar2000 v2.25.8 + foo_upnp 0.99.49）**
 > 核心流程通過：真實 server 瀏覽 → 加入 playlist（metadata 預填）→
@@ -63,7 +63,8 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 
 ## 1. 載入與註冊
 
-- [x] Preferences → Components 列表出現「DMS Browser 0.2.0-dev」。
+- [x] Preferences → Components 列表出現「DMS Browser 0.2.0」。
+      （0.2.0-dev 驗於 2026-07-18；升版 0.2.0 由 clean-profile 首跑確認。）
 - [x] 主選單 View 出現「DMS Browser」項目。
 - [x] Preferences → Tools 底下出現「DMS Browser」頁。
 

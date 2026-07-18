@@ -17,28 +17,24 @@ Media Server 的 device description URL，瀏覽 ContentDirectory，
 | M1 Phase 0 CLI PoC | ✅ 完成 — 已對真實 server 驗證 |
 | M2 Core Library | ✅ 完成 — clean API、fixture tests、mockable transport、CI |
 | M3 foobar2000 macOS MVP | ✅ 完成 — 真實 server 瀏覽→加入→播放全流程驗收通過（docs/21） |
-| M4 Browser 體驗與 metadata | 🔄 進行中 — 主要功能已實作，驗收收尾中（docs/21） |
+| M4 Browser 體驗與 metadata | ✅ 完成 — 全部驗收通過（docs/21），v0.2.0 |
 
 Phase 0 CLI 已對 foobar2000 UPnP Media Server (foo_upnp 0.99.49) 完整驗證：
 root/child browse、BrowseMetadata、pagination、中日文 metadata、
 multi-res 選擇、album art URL。詳見 `docs/10_compatibility_plan.md`。
 
-### M4 進度（component 版本 `0.2.0-dev`）
+### M4 成果（component 版本 `0.2.0`）
 
-已實作並經真機驗證：
+全部經真機驗收（逐項證據見 `docs/21_manual_test_checklist.md`）：
 
 - 「DMS Browser」layout element（`ui_element_mac`）整合，可放入自訂 layout
 - browser 底部 metadata / resource 摘要與 album art 預覽
-- container「加入直接子項曲目」與「遞迴加入所有曲目」（含取消）
+- container「加入直接子項曲目」（含未展開 container 隨選取回）與
+  「遞迴加入所有曲目」（即時進度、取消、10,000 上限、略過計數）
 - playlist / Now Playing 封面（`album_art_fallback` 下載）
-- 真實 server 播放與 seek（foo_upnp 0.99.49，HTTP Range）
-
-剩餘驗收與已知缺陷（逐項狀態見 `docs/21_manual_test_checklist.md`）：
-
-- browser 回應性與 Preferences 變更即時反映
-- 遞迴加入的掃描進度顯示、上限與略過數量回報
-- 錯誤列重試、URL 修正後重新套用、SOAP fault 顯示
-- Preferences URL 欄位在編輯中關閉視窗只存 `http://` 的缺陷
+- 真實 server 播放與 seek（foo_upnp 0.99.49、MiniDLNA 1.3.3）
+- 錯誤處理：手動重試（console 記錄）、SOAP fault 顯示、
+  30s 傳輸 timeout（連線 10s）
 
 ## Install（使用者）
 
@@ -126,8 +122,10 @@ gitlab/               GitLab issues / labels / milestones 草稿
 - **M3（✅ 完成）**：CMake macOS bundle + foobar2000 macOS SDK、
   Preferences page、Browser panel、playlist 整合（`docs/06`、
   `docs/adr/ADR-013`）
-- **M4（🔄 進行中）**：browser metadata/album art、遞迴加入、layout
-  element 已實作；剩餘為驗收收尾與缺陷修復（見上方「M4 進度」與
+- **M4（✅ 完成）**：browser metadata/album art、遞迴加入、layout
+  element、錯誤處理強化，驗收全數通過（見上方「M4 成果」與
   `docs/21_manual_test_checklist.md`）
-- **M5**：MiniDLNA / Jellyfin / Plex 相容性（`docs/10`）
-- **M6**：SSDP discovery、release packaging（`docs/12`）
+- **M5（🔄 進行中）**：server 相容性——MiniDLNA 1.3.3 已完成基線
+  （CLI + 元件級，`docs/10`）；Jellyfin / Plex 待測
+- **M6**：SSDP discovery、release packaging（`docs/12`；v0.2.0 beta
+  打包已就緒，見 `docs/22`）
