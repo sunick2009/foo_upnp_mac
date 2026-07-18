@@ -436,6 +436,11 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   實際 WAV 為 0:04、1411 kbps，差異已確認。以 `strings` 確認 WAV 實體內含
   `Mock comment text`，但 Properties → Metadata Comment Value 仍空白，因此
   #9 Comment 仍未通過，問題不再是 fixture 缺少 tag。
+- #10 五輪視窗：第 1 輪 DMS Browser 可開啟，但按紅色 Close 後主視窗與 bundle
+  identifier 均無法取得，兩次皆回報 `timeoutReached`，因此第 1 輪失敗，未繼續
+  執行其餘四輪。恢復程序後查看 Console，只有 component name clash 錯誤，沒有
+  `DMS Browser: standalone window shown` / `closed` 訊息，表示診斷 log build
+  也未成功載入。
 
 ### 真實 server 結果
 
@@ -455,9 +460,9 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   artifact Install… 後關閉 Preferences 時，顯示名稱與 bundle identifier 均再次
   回報 `timeoutReached`，故此項仍應保留為間歇性生命週期問題，待 #10 診斷 build
   五輪回歸。
-- 本輪因關閉 Preferences 後顯示名稱與 bundle identifier 均連續回報
-  `timeoutReached`，未能開始 #10 的五輪 View → DMS Browser 開關測試；因此沒有
-  可記錄的五輪 console `shown` / `closed` 順序，#10 維持未驗證。
+- 本輪關閉 Preferences 後顯示名稱與 bundle identifier 均連續回報
+  `timeoutReached`；恢復程序後開始 #10 第 1 輪，DMS Browser 開啟成功，但關閉後
+  再次觸發相同 timeout。故 #10 第 1 輪失敗，其餘四輪未執行。
 - DMS Browser 重開後 screenshot 尺寸維持 680×488；Computer Use 可取得尺寸，
   但無法提供螢幕座標，因此位置未能以數值獨立證實。功能性關閉與重開已通過，
   但步驟要求的「純手動」復核仍未由本輪 Computer Use 完整取代。
