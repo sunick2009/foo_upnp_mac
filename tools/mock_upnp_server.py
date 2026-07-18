@@ -36,13 +36,11 @@ Usage:
 """
 
 import base64
-import io
 import math
 import re
 import struct
 import sys
 import time
-import wave
 import xml.sax.saxutils as sax
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -78,23 +76,20 @@ def _riff_info_chunk():
 
 def demo_wav():
     """4s of a quiet 440 Hz tone, 44100 Hz / 16-bit / stereo, with RIFF
-    INFO tags — served for any /media/*.wav so fb2k can really play mock
-    tracks and open Properties (a 404 there reads as `Object not found`)."""
+    INFO tags placed BEFORE the data chunk (some readers only scan
+    pre-data chunks) — served for any /media/*.wav so fb2k can really
+    play mock tracks and open Properties."""
     global _WAV_CACHE
     if _WAV_CACHE is None:
-        buf = io.BytesIO()
-        with wave.open(buf, "wb") as w:
-            w.setnchannels(2)
-            w.setsampwidth(2)
-            w.setframerate(44100)
-            frames = bytearray()
-            for i in range(44100 * 4):
-                v = int(3000 * math.sin(2 * math.pi * 440 * i / 44100))
-                frames += struct.pack("<hh", v, v)
-            w.writeframes(bytes(frames))
-        data = bytearray(buf.getvalue() + _riff_info_chunk())
-        struct.pack_into("<I", data, 4, len(data) - 8)  # patch RIFF size
-        _WAV_CACHE = bytes(data)
+        frames = bytearray()
+        for i in range(44100 * 4):
+            v = int(3000 * math.sin(2 * math.pi * 440 * i / 44100))
+            frames += struct.pack("<hh", v, v)
+        fmt = b"fmt " + struct.pack("<IHHIIHH", 16, 1, 2, 44100,
+                                    44100 * 4, 4, 16)
+        data = b"data" + struct.pack("<I", len(frames)) + bytes(frames)
+        body = b"WAVE" + fmt + _riff_info_chunk() + data
+        _WAV_CACHE = b"RIFF" + struct.pack("<I", len(body)) + body
     return _WAV_CACHE
 
 ROOT_DESC = """<?xml version="1.0"?>

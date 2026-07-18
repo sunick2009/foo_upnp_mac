@@ -22,6 +22,13 @@ arm64 架構、`_foobar2000_get_interface` 匯出、
 Components → Install… / 手動放入 `user-components/`，系統需求同為
 macOS 11+——與本專案的格式決定一致。最終仍以 clean-install 實測為準。
 
+**Install… 實測與修正（2026-07-18）**：初版打包（bundle 直接在 zip
+根目錄）被 foobar2000 Install… 拒絕：`Component installation failure:
+Unsupported format or corrupted file`。逆向可安裝的第三方 mac 元件
+（foo_jl_simplaylist 1.5.1）後確認正確 layout 為 **zip 根目錄下一層
+`mac/` 目錄**（`mac/<name>.component/…`）。CI 打包已改為此 layout；
+待以修正後的套件重測 Install…。
+
 ## 安裝
 
 1. 下載 `.fb2k-component` 與 `.sha256`，`shasum -a 256 -c <檔名>.sha256`。

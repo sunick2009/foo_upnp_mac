@@ -28,8 +28,9 @@
 > 略過數量、10,000 首上限與取消狀態均符合預期。真實 server 的「播放列表」
 > 完整遞迴掃描成功完成：4188 首、310 個資料夾，已驗證 30 秒 Browse
 > timeout 修復。重啟前關閉獨立 DMS Browser 曾重現 Computer Use 無法取得
-> 主視窗的 timeout；使用者手動重啟後重測，關閉與再次開啟均正常，故目前
-> 定性為間歇性 stale window/controller 狀態，尚非穩定元件故障。
+> 主視窗的 timeout；使用者手動重啟後重測，關閉與再次開啟均正常。但本輪
+> artifact Install… 測試結束後關閉 Preferences 又重現 `timeoutReached`，顯示
+> 仍是間歇性 stale window/controller 狀態，不能定性為已根治。
 **前置：** component 已安裝（`~/Library/foobar2000-v2/user-components/
 foo_dms_browser.component`）並重啟 foobar2000。
 自動化已涵蓋的部分（adapter 邏輯、載入不崩潰）不在此清單。
@@ -417,7 +418,9 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
 - #8 Components：Preferences → Components 列出 `DMS Browser 0.2.0-dev`，
   module 為 `foo_dms_browser`，已通過。Install… artifact 的檔案已找到，實際
   路徑為 `/private/tmp/claude-501/-Users-susu-Code-foo-upnp-mac/93c22eb7-438b-4a1c-8011-62d326f7e6d8/scratchpad/ci-artifact/foo_dms_browser-0.2.0-dev-arm64.fb2k-component`；
-  尚未執行載入，待使用者確認後記錄「接受並要求重啟」或「不支援」。
+  已執行 Install…，foobar2000 顯示 `Component installation failure: Unsupported
+  format or corrupted file`。依本輪驗收規則，此結果記錄為「不支援」且算通過；沒有
+  觸發重啟要求。
 - #6 MiniDLNA 1.3.3：8200 根節點顯示 Browse Folders / Music / Pictures /
   Video；Music → All Music 顯示 13 首，含「第二首歌」「三曲目のテスト」；
   選取曲目顯示 `audio/mpeg / 44100 Hz / 2 ch` 與紅色封面。加入後 playlist
@@ -442,7 +445,10 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   重啟後重測，關閉後主視窗可立即取得，View → DMS Browser 也可再次開啟；因此
   目前記為間歇性 stale window/controller 狀態，不再判定為穩定 lifecycle blocker。
 - 關閉 Preferences，包括 URL 欄位保持焦點後關閉，均可重新取得主視窗；重開
-  Preferences 仍顯示完整 `http://10.102.0.10:2333/DeviceDescription.xml`。
+  Preferences 仍顯示完整 `http://10.102.0.10:2333/DeviceDescription.xml`。但本輪
+  artifact Install… 後關閉 Preferences 時，顯示名稱與 bundle identifier 均再次
+  回報 `timeoutReached`，故此項仍應保留為間歇性生命週期問題，待 #10 診斷 build
+  五輪回歸。
 - DMS Browser 重開後 screenshot 尺寸維持 680×488；Computer Use 可取得尺寸，
   但無法提供螢幕座標，因此位置未能以數值獨立證實。功能性關閉與重開已通過，
   但步驟要求的「純手動」復核仍未由本輪 Computer Use 完整取代。

@@ -71,15 +71,19 @@ jobs:
           codesign --verify --deep --strict "$BUNDLE"
           echo "smoke check OK: $(file -b "$BIN")"
 
-      # .fb2k-component is a zip of the .component bundle; versioned
-      # filename + SHA-256 so a download is verifiable (issue #8).
+      # .fb2k-component layout: the bundle must sit under a top-level
+      # mac/ directory or foobar2000's Install… rejects it as
+      # "Unsupported format" (verified against working third-party mac
+      # components, 2026-07-18). Versioned filename + SHA-256 (issue #8).
       - name: Package .fb2k-component
         run: |
           VERSION=$(awk -F'"' '/^ *"[0-9]/{print $2; exit}' \
             component_macos/foo_dms_browser/ComponentEntry.mm)
           PKG="foo_dms_browser-${VERSION}-arm64.fb2k-component"
           cd build/component_macos
-          ditto -c -k --keepParent foo_dms_browser.component "$PKG"
+          rm -rf pkgroot && mkdir -p pkgroot/mac
+          cp -R foo_dms_browser.component pkgroot/mac/
+          (cd pkgroot && ditto -c -k . "../$PKG")
           shasum -a 256 "$PKG" | tee "$PKG.sha256"
 
       - name: Upload component artifact
