@@ -6,4 +6,4 @@ third_party/fb2k_sdk/
 *.swp
 *.tmp
 .vscode/
-.cache/
+.cache/__pycache__/
