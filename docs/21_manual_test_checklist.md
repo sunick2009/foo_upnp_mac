@@ -131,10 +131,11 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 - [x] 真實 foo_upnp server（`http://10.102.0.10:2333/DeviceDescription.xml`
       ，內網）：root browse、中日文標題、多 res 選擇（WAV 優先於
       L16）、加入後可播放。
-- [x] MiniDLNA 1.3.3（docker）：元件級 browse → 加入 → 播放狀態
-      （MP3 與 FLAC 均進入解碼並可 seek）→ 封面通過；`%artist%` 顯示
-      album artist 為 MiniDLNA quirk（詳見 docs/10）。#6 以此證據
-      收案；喇叭實際出聲未以工具獨立記錄（自動化無法監聽音訊）。
+- [x] MiniDLNA 1.3.3（docker）：元件級 browse → 加入 → 播放狀態通過
+      （MP3 進入解碼且 seek 可移動；FLAC 進入解碼，seek 未另測）、
+      封面通過；`%artist%` 顯示 album artist 為 MiniDLNA quirk
+      （詳見 docs/10）。#6 以此證據收案；喇叭實際出聲未以工具獨立
+      記錄（自動化無法監聽音訊）。
 
 ## 已知限制
 
