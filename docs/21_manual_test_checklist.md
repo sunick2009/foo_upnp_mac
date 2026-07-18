@@ -280,6 +280,9 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
   因此目前不能以「fixture 沒 tag」解釋，#9 Comment 維持未通過。需釐清
   foobar2000 mac 對遠端 WAV RIFF INFO 的 metadata 顯示限制，或 component
   使用的讀檔/提示覆蓋路徑。**
+  **（已取代）** 本段為當時的中間結論。最終結果見「#10、#9 追加重測」：
+  `%comment%` 以 MP3+ID3 路徑驗證通過，遠端 WAV 的 RIFF INFO comment
+  不顯示定性為 fb2k mac 解碼器限制，#9 已收案關閉。
 
 **清理結果：** 已移除本次新增的 `Keyboard Save Test` server 設定列；`main`
 與 mock server 設定保留原值，mock server 未啟動。取消及 timeout 遞迴操作本身
@@ -413,6 +416,8 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   → Details 顯示實際 WAV 為 0:04、44100 Hz、2 ch、16 bit、1411 kbps，播放
   狀態顯示 `PCM 1411kbps 44100Hz stereo`。Properties → Metadata 的 Comment
   Value 仍為空白，未出現 `Mock comment text`，因此 #4 欄位驗證維持未通過。
+  **（已取代）** 後續 MP3+ID3 補測通過並收案 #9，§4 欄位項目已勾選；
+  見下方「#10、#9 追加重測」。
 
 ### 本輪追加驗證（2026-07-18：#8、#6、#9、#11）
 
