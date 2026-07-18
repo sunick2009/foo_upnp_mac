@@ -432,6 +432,9 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   `DMS Browser 0.2.0-dev`，但同時出現 `(component not loaded)`，啟動資訊顯示
   `Name clash with built-in component, please uninstall`，因此固定 artifact
   未能載入，不能記為完整安裝成功。
+  **（已取代）** name clash 根因是 Install… 複本與手動放置的 bundle 並存
+  （見 docs/22 的互斥警告）；移除重複後，0.2.0 artifact 於 clean-profile
+  首跑以 Install… 安裝並完整載入（Components 顯示 0.2.0），#8 已收案。
 - #11 未展開直接加入：新的 mock server 啟動後，對從未展開的 `Mixed Fixtures`
   直接右鍵加入，狀態列顯示「已加入 2 首到目前播放清單，略過 1 個不可播放項目」，
   已不再出現「沒有項目可添加」。
@@ -445,11 +448,15 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   實際 WAV 為 0:04、1411 kbps，差異已確認。以 `strings` 確認 WAV 實體內含
   `Mock comment text`，但 Properties → Metadata Comment Value 仍空白，因此
   #9 Comment 仍未通過，問題不再是 fixture 缺少 tag。
+  **（已取代）** 最終由 MP3+ID3 路徑驗證通過並收案 #9（遠端 WAV 定性為
+  fb2k mac 解碼器限制），見下方「#10、#9 追加重測」。
 - #10 五輪視窗：第 1 輪 DMS Browser 可開啟，但按紅色 Close 後主視窗與 bundle
   identifier 均無法取得，兩次皆回報 `timeoutReached`，因此第 1 輪失敗，未繼續
   執行其餘四輪。恢復程序後查看 Console，只有 component name clash 錯誤，沒有
   `DMS Browser: standalone window shown` / `closed` 訊息，表示診斷 log build
   也未成功載入。
+  **（已取代）** 該輪受 name clash 污染（診斷 build 非載入複本）；清理後
+  乾淨 session 的五輪回歸全數通過並收案 #10，見下方「#10、#9 追加重測」。
 
 ### #10、#9 追加重測（2026-07-18）
 
