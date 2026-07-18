@@ -233,12 +233,10 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
 
 ### 需要追蹤的問題
 
-- **（2026-07-18 新發現）未展開的 container 無法直接右鍵加入**：對播放
-  清單或專輯 container 右鍵「加入直接子項曲目」，必須先展開載入子項才
-  能用；未展開時會被停用或提示沒有項目可添加。原因：direct add 只讀
-  記憶體中的 `node.children`（展開時才載入），而「遞迴加入」自己抓資料
-  所以不受影響。待評估修正方向：未載入時先抓直接子項再加入（單層
-  browse），與遞迴路徑共用回饋。
+- ~~（2026-07-18 新發現）未展開的 container 無法直接右鍵加入~~：#11 修復
+  已於 2026-07-18 以新的 mock server 驗證。對從未展開的 `Mixed Fixtures`
+  直接右鍵「加入直接子項曲目」，先完成取回，狀態列顯示「已加入 2 首到目前
+  播放清單，略過 1 個不可播放項目」。
 
 - 關閉 DMS Browser 獨立視窗（Close 按鈕或 Window → Close）後，foobar2000
   程序仍在執行；重啟前 Computer Use 曾無法重新取得任何主視窗，需重啟程序
@@ -272,13 +270,12 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
   Comment Value 為空白，未出現 `Mock comment text`；因此 `%comment%` 尚未通過，
   需修正 DIDL `upnp:longDescription` 到 playlist/Properties 的欄位映射，或明確
   定義 Properties 不顯示遠端 DIDL comment。
-  **→ 已診斷（issue #9）：非映射 bug。元件用 `add_hint_browse` 提供
-  DIDL hint，fb2k 語意是「檔案實際被讀取後，檔案自身 tag 取代 hint」——
-  Details 變 1411 kbps 即證明檔案已被讀，而測試 WAV 原本無任何 tag，
-  Comment 因此變空白。hint 映射本身有單元測試覆蓋。修正：mock WAV 已
-  加入 RIFF INFO tag（ICMT=Mock comment text），重測時檔案讀取後
-  Properties 也會顯示 Comment；hint 語意（讀檔前顯示 DIDL 預填）維持
-  原設計。待重測確認。**
+  **→ 已重測：新的 mock WAV 內容以 HTTP 200 提供，且以 `strings` 確認實體
+  RIFF INFO 內含 `ICMT=Mock comment text`；Details 也顯示實際 WAV 已讀取
+  （0:04、1411 kbps）。但 Properties → Metadata 的 Comment Value 仍為空白，
+  因此目前不能以「fixture 沒 tag」解釋，#9 Comment 維持未通過。需釐清
+  foobar2000 mac 對遠端 WAV RIFF INFO 的 metadata 顯示限制，或 component
+  使用的讀檔/提示覆蓋路徑。**
 
 **清理結果：** 已移除本次新增的 `Keyboard Save Test` server 設定列；`main`
 與 mock server 設定保留原值，mock server 未啟動。取消及 timeout 遞迴操作本身
@@ -413,7 +410,7 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   狀態顯示 `PCM 1411kbps 44100Hz stereo`。Properties → Metadata 的 Comment
   Value 仍為空白，未出現 `Mock comment text`，因此 #4 欄位驗證維持未通過。
 
-### 本輪追加驗證（2026-07-18：#8、#6、#9）
+### 本輪追加驗證（2026-07-18：#8、#6、#9、#11）
 
 - #8 Components：Preferences → Components 列出 `DMS Browser 0.2.0-dev`，
   module 為 `foo_dms_browser`，已通過。Install… artifact 的檔案已找到，實際
@@ -421,6 +418,14 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   已執行 Install…，foobar2000 顯示 `Component installation failure: Unsupported
   format or corrupted file`。依本輪驗收規則，此結果記錄為「不支援」且算通過；沒有
   觸發重啟要求。
+- #8 fixed artifact 重測：Install… 接受檔案並提示 `foobar2000 must be restarted
+  for newly installed components to load.`；重啟後 Components 仍列出
+  `DMS Browser 0.2.0-dev`，但同時出現 `(component not loaded)`，啟動資訊顯示
+  `Name clash with built-in component, please uninstall`，因此固定 artifact
+  未能載入，不能記為完整安裝成功。
+- #11 未展開直接加入：新的 mock server 啟動後，對從未展開的 `Mixed Fixtures`
+  直接右鍵加入，狀態列顯示「已加入 2 首到目前播放清單，略過 1 個不可播放項目」，
+  已不再出現「沒有項目可添加」。
 - #6 MiniDLNA 1.3.3：8200 根節點顯示 Browse Folders / Music / Pictures /
   Video；Music → All Music 顯示 13 首，含「第二首歌」「三曲目のテスト」；
   選取曲目顯示 `audio/mpeg / 44100 Hz / 2 ch` 與紅色封面。加入後 playlist
@@ -428,8 +433,9 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   播放狀態可見且 seek 可移動，FLAC 曲目顯示 `audio/x-flac` 並進入播放
   狀態；但 Computer Use 無法直接驗證實際可聞聲音，故 §6 暫不勾選。
 - #9 mock：Rich Track 已加入並播放；hint 時長為 3:30，Properties/decoder
-  實際 WAV 為 0:04、1411 kbps，差異已確認。Comment Value 空白，`Mock comment
-  text` 未出現，這是本輪唯一明確未通過的驗收子項。
+  實際 WAV 為 0:04、1411 kbps，差異已確認。以 `strings` 確認 WAV 實體內含
+  `Mock comment text`，但 Properties → Metadata Comment Value 仍空白，因此
+  #9 Comment 仍未通過，問題不再是 fixture 缺少 tag。
 
 ### 真實 server 結果
 
@@ -449,6 +455,9 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   artifact Install… 後關閉 Preferences 時，顯示名稱與 bundle identifier 均再次
   回報 `timeoutReached`，故此項仍應保留為間歇性生命週期問題，待 #10 診斷 build
   五輪回歸。
+- 本輪因關閉 Preferences 後顯示名稱與 bundle identifier 均連續回報
+  `timeoutReached`，未能開始 #10 的五輪 View → DMS Browser 開關測試；因此沒有
+  可記錄的五輪 console `shown` / `closed` 順序，#10 維持未驗證。
 - DMS Browser 重開後 screenshot 尺寸維持 680×488；Computer Use 可取得尺寸，
   但無法提供螢幕座標，因此位置未能以數值獨立證實。功能性關閉與重開已通過，
   但步驟要求的「純手動」復核仍未由本輪 Computer Use 完整取代。
