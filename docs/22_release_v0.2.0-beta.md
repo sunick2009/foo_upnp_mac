@@ -91,8 +91,8 @@ CLI + 元件級）。Jellyfin/Plex 尚為 unknown。
         （2026-07-18，修正 `mac/` layout 後通過；安裝至
         `user-components/foo_dms_browser/`。注意勿與手動複本並存，
         會 component name clash）。
-  - [ ] Components 列表顯示 DMS Browser 0.2.0（目前安裝為 artifact 版
-        0.2.0-dev，重啟後可先確認註冊正常）。
+  - [ ] Components 列表顯示 DMS Browser 0.2.0。
   - [ ] Preferences 頁、layout element、browse、加入、播放、封面正常。
 - [ ] 發佈 GitHub Release：附上套件、`.sha256`、本文件 changelog 節。
-- [ ] 發佈前把 `ComponentEntry.mm` 版本 `0.2.0-dev` → `0.2.0`。
+- [x] 發佈前把 `ComponentEntry.mm` 版本 `0.2.0-dev` → `0.2.0`
+      （2026-07-18，issue #12）。
