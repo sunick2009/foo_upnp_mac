@@ -7,12 +7,17 @@ namespace component {
 PagedBrowseResult fetchAllChildren(const BrowseFn& browse,
                                    const std::string& objectId,
                                    uint32_t pageSize,
-                                   uint32_t maxItems) {
+                                   uint32_t maxItems,
+                                   CancellationFn isCancelled) {
     PagedBrowseResult result;
     if (pageSize == 0) pageSize = 100;
 
     uint32_t index = 0;
     while (true) {
+        if (isCancelled && isCancelled()) {
+            result.cancelled = true;
+            break;
+        }
         upnp::BrowseParams params;
         params.objectId = objectId;
         params.browseFlag = upnp::BrowseFlag::DirectChildren;

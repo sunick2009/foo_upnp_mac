@@ -111,3 +111,32 @@ TEST_CASE("browse exceptions propagate to the caller", "[pager]") {
     };
     CHECK_THROWS_AS(fetchAllChildren(throwing, "0"), std::runtime_error);
 }
+
+TEST_CASE("cancellation stops pagination between pages", "[pager]") {
+    std::vector<BrowseParams> calls;
+    int fetches = 0;
+    // Cancel after the first page has been fetched: the second poll
+    // (before page two) must stop the loop.
+    const auto result = fetchAllChildren(
+        fakeServer(250, 250, &calls), "0", 100, 10000,
+        [&] { return fetches++ >= 1; });
+    CHECK(result.cancelled);
+    REQUIRE(calls.size() == 1);
+    CHECK(result.objects.size() == 100); // partial pages are kept...
+    // ...and callers are expected to discard them when cancelled.
+}
+
+TEST_CASE("cancellation before the first page fetches nothing", "[pager]") {
+    std::vector<BrowseParams> calls;
+    const auto result = fetchAllChildren(
+        fakeServer(50, 50, &calls), "0", 100, 10000, [] { return true; });
+    CHECK(result.cancelled);
+    CHECK(calls.empty());
+    CHECK(result.objects.empty());
+}
+
+TEST_CASE("no cancellation callback behaves as before", "[pager]") {
+    const auto result = fetchAllChildren(fakeServer(5, 5), "0", 100, 10000);
+    CHECK_FALSE(result.cancelled);
+    CHECK(result.objects.size() == 5);
+}

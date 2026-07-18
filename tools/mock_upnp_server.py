@@ -15,10 +15,6 @@ Browse with canned DIDL-Lite. Object tree:
                       playable WAV (DIDL duration 3:30 vs real 4s on purpose)
         nores-track   audio item WITHOUT any <res> (must be skipped on add)
         plain-track   playable WAV item
-
-    /media/*.wav serves 4s of a quiet 440 Hz tone (44100/16/stereo) so
-    mixed/slow tracks really play in foobar2000; music and bigtree URLs
-    stay fake (404) — playback failure there is expected.
       broken       container; browsing it returns SOAP fault 701
       slow         container, 2 children; each Browse sleeps 5s
                    (capture 載入中…, UI must stay responsive)
@@ -29,7 +25,10 @@ Browse with canned DIDL-Lite. Object tree:
 
 Browse of any other ObjectID returns UPnP error 701 (No such object).
 StartingIndex/RequestedCount are honored (RequestedCount=0 → all).
-Album art is served at /art/cover.png.
+Album art is served at /art/cover.png. /media/*.wav serves 4s of a
+quiet 440 Hz tone (44100/16/stereo, RIFF INFO tagged) so mixed/slow
+tracks really play in foobar2000; music and bigtree URLs stay fake
+(404) — playback failure there is expected.
 
 Usage:
     python3 tools/mock_upnp_server.py [port]     # default port 18200
@@ -158,7 +157,7 @@ def container(cid, parent, title, child_count):
     )
 
 
-def root_entries(host):
+def root_entries(_host):
     return [
         container("music", "0", "Music", 2),
         container("video", "0", "Video", 0),
@@ -232,7 +231,7 @@ def slow_entries(host):
     ]
 
 
-def bigtree_entries(host):
+def bigtree_entries(_host):
     return [
         container(f"big-{k}", "bigtree", f"Folder {k:03d}",
                   BIGTREE_TRACKS_PER_CONTAINER)

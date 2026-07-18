@@ -21,7 +21,11 @@
   以「component 卸載時能安全取消/忽略回呼」為準。
 - 每個 tree 節點同時間至多一個 in-flight browse；重複展開不重發。
 - 取消語意 v1 從簡：關窗/卸載後回呼落地時發現 UI 已不在就丟棄
-  結果，不強求中斷進行中的 HTTP 請求（timeout 10s 會自然收尾）。
+  結果，不強求中斷進行中的 HTTP 請求（timeout 會自然收尾）。
+  （2026-07-18 修訂：傳輸 timeout 由 10s 放寬為 30s／連線維持 10s，
+  因真實 server 單頁 Browse 可能超過 10s；為補償取消延遲，
+  `fetchAllChildren` 增加分頁之間的取消輪詢，遞迴與隨選加入均使用，
+  故取消回應時間上限是「單頁」而非「單 container」的傳輸時間。）
 
 不選 `threaded_process`：每次展開都跳 modal 進度框，瀏覽體驗
 無法接受。不改 async HttpClient：推翻 ADR-008/009，core 與測試

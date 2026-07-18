@@ -45,3 +45,13 @@ TEST_CASE("malformed or unexpected documents throw XmlParseException",
     CHECK_THROWS_AS(SoapBrowseResponseParser::parse("<html><body>404</body></html>"),
                     upnp::XmlParseException);
 }
+
+// Captured verbatim from MiniDLNA 1.3.3 (2026-07-18, issue #6).
+TEST_CASE("parses a real MiniDLNA 1.3.3 browse response", "[parser][soap]") {
+    const auto response = SoapBrowseResponseParser::parse(
+        readFixture("soap_responses/minidlna_133_browse_response.xml"));
+    CHECK(response.numberReturned == 4);
+    CHECK(response.totalMatches == 13);
+    CHECK(response.resultXml.find("Mini Test Album") != std::string::npos);
+    CHECK(response.resultXml.find("第二首歌") != std::string::npos);
+}

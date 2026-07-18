@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <utility>
 #include <string>
 
 #include "component/BrowsePager.hpp"
@@ -32,13 +33,18 @@ public:
     }
 
     // All pages of one container (ADR-012 revision). Throws upnp errors.
-    component::PagedBrowseResult fetchChildren(const std::string& objectId) {
+    // isCancelled (optional) is polled between pages so a long paged
+    // fetch can stop early; the result then has `cancelled` set.
+    component::PagedBrowseResult fetchChildren(
+        const std::string& objectId,
+        component::CancellationFn isCancelled = {}) {
         connectIfNeeded();
         return component::fetchAllChildren(
             [this](const upnp::BrowseParams& params) {
                 return client_->browse(params);
             },
-            objectId);
+            objectId, /*pageSize=*/100, /*maxItems=*/10000,
+            std::move(isCancelled));
     }
 
     std::string friendlyName() const {
