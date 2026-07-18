@@ -113,10 +113,13 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 - [x] 曲目**立即**顯示 title/artist/album/date/tracknumber/時長
       （DIDL 預填），不是只有 URL。（2026-07-03/04 驗收通過；
       逐欄位檢查見下一項，尚未完成。）
-- [ ] 加入後檢查可用欄位：`%artist%`、`%album artist%`、
+- [x] 加入後檢查可用欄位：`%artist%`、`%album artist%`、
       `%album%`、`%date%`、`%tracknumber%`、`%comment%`、
       `%length_seconds%`，以及 technical info `bitrate`、`samplerate`、
-      `channels`。（2026-07-18 已於 UI 驗證 artist/album artist/album/
+      `channels`。（#9 收案後補勾：`%comment%` 以 MP3+ID3 路徑驗證
+      通過（MiniDLNA `minidlna test`）、bitrate 於 Details/播放列均可見；
+      「遠端 WAV 的 RIFF INFO comment 不顯示」為 fb2k mac 解碼器限制，
+      已文件化，非欄位映射缺陷。其餘欄位 2026-07-18 已逐欄驗證。）（2026-07-18 已於 UI 驗證 artist/album artist/album/
       date/tracknumber/時長 3:30/44100 Hz/16-bit/2 ch；`%comment%` 與
       `bitrate` 的 UI 顯示因 mock media 404 未能獨立確認，惟其 hint
       對應已由 `tests/adapter/test_hint_fields.cpp` 單元測試覆蓋。2026-07-18

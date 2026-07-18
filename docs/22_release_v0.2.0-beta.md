@@ -82,6 +82,12 @@ CLI + 元件級）。Jellyfin/Plex 尚為 unknown。
       `foo_dms_browser-0.2.0-dev-arm64.fb2k-component`）；解壓後
       bundle 結構、arm64、`_foobar2000_get_interface`、
       `codesign --verify --deep --strict` 均通過。
+- [x] **0.2.0 release artifact** 驗證（2026-07-18，run 29639328169，
+      commit 772cab6）：SHA-256
+      `4a35d492fa93eef6cdae721249f9b7b1ac53b8a4ca7d392f32b0514d94c70a8d`
+      `foo_dms_browser-0.2.0-arm64.fb2k-component`；`mac/` layout、
+      嚴格簽章、入口點、binary 內版號 `0.2.0` 均通過，並用於
+      clean-profile 首跑與 GitHub Release。
 - [x] 乾淨環境 clean-install 測試（不使用本機 build 目錄）：
       （2026-07-18 clean-profile 首跑：備份原 profile 後以全新 profile
       啟動，Install… 安裝 run 29639328169 的
@@ -97,6 +103,9 @@ CLI + 元件級）。Jellyfin/Plex 尚為 unknown。
   - [x] Components 列表顯示 DMS Browser 0.2.0（2026-07-18 首跑）。
   - [x] Preferences 頁、browse、加入、播放、封面正常
         （2026-07-18 首跑，對真實 foo_upnp server 驗證）。
+  - [ ] layout element 於 0.2.0 artifact 全新安裝下加入 layout
+        （同碼 build 已於 2026-07-17/18 驗證 layout element；
+        0.2.0 首跑未包含此項，補測後勾選）。
 - [x] 發佈 GitHub Release（v0.2.0 pre-release）：附上套件、`.sha256`、
       changelog（run 29639328169 artifact，commit 772cab6）。
 - [x] 發佈前把 `ComponentEntry.mm` 版本 `0.2.0-dev` → `0.2.0`
