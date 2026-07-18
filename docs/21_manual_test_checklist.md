@@ -459,3 +459,36 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   `/private/tmp/foo_upnp_round2-New-Playlist*.bak` 與
   `/private/tmp/foo_upnp_round3-New-Playlist*.bak`，均為可逆備份。
 - 重啟 foobar2000 後，New Playlist table 為空；mock server 已停止。
+
+## 第三輪快檢（2026-07-18 準備，約 5 分鐘）— 本輪照這節做
+
+**前置：** 含診斷 log 的 build 已安裝（2026-07-18）；重啟 foobar2000。
+
+### 1. Install… 重測（#8，修正版 mac/ layout 套件）
+
+1. Preferences → Components → Install… 選取：
+   `/private/tmp/claude-501/-Users-susu-Code-foo-upnp-mac/93c22eb7-438b-4a1c-8011-62d326f7e6d8/scratchpad/fixed-pkg/foo_dms_browser-0.2.0-dev-arm64.fb2k-component`
+2. 預期：**接受並提示重啟**（上次的 `Unsupported format` 是因為 zip 根
+   目錄少了 `mac/` 層，已修）。若仍拒絕，記下確切錯誤訊息。
+3. 結果記入 docs/22「驗證紀錄」的 Install… 項。
+
+### 2. #9 Comment 重測（注意兩層快取）
+
+1. **重啟 mock server**（必要——WAV 是行程內快取，舊行程沒有 tag）：
+   `python3 tools/mock_upnp_server.py 8200`
+2. **刪除 playlist 裡舊的 Rich Track 列**（metadb 以 URL 快取舊資訊），
+   再從 Mixed Fixtures 重新加入。
+3. 開 Properties → Metadata：預期 **Comment = Mock comment text**
+   （現在 WAV 檔內嵌 RIFF INFO ICMT tag，且位於 data chunk 之前）。
+4. 若仍空白 → 結論轉為「fb2k mac 不顯示遠端 WAV 的 RIFF comment」，
+   以文件定義收案 #9（§4 該項註記後勾選）。
+
+### 3. #10 五輪視窗回歸
+
+照上方「**視窗生命週期回歸測試（issue #10 定義，待執行）**」節執行
+5 輪；每輪 console 應出現 `DMS Browser: standalone window shown` /
+`closed (ordered out, controller retained)`。任何一輪主視窗失去回應，
+記下當輪 console 順序。
+
+（選做）§6 MiniDLNA 聞聲確認：`docker start minidlna-test` 後播放任一
+首，聽到 4 秒正弦音即可把 §6 勾回。
