@@ -117,7 +117,10 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
       `channels`。（2026-07-18 已於 UI 驗證 artist/album artist/album/
       date/tracknumber/時長 3:30/44100 Hz/16-bit/2 ch；`%comment%` 與
       `bitrate` 的 UI 顯示因 mock media 404 未能獨立確認，惟其 hint
-      對應已由 `tests/adapter/test_hint_fields.cpp` 單元測試覆蓋。）
+      對應已由 `tests/adapter/test_hint_fields.cpp` 單元測試覆蓋。2026-07-18
+      重新以真實 WAV 驗證：Properties → Details 顯示 44100 Hz、2 ch、16 bit、
+      1411 kbps；但 Properties → Metadata 的 Comment Value 仍為空白，未出現
+      `Mock comment text`，故本項仍不勾選。）
 - [x] Container 右鍵「加入直接子項曲目」→ 其直接子項曲目
       全部加入（單層，子 container 不遞迴）。
 - [x] 若加入範圍內存在沒有可播放 HTTP resource 的 item，狀態列顯示略過
@@ -162,7 +165,8 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 - [x] 真實 foo_upnp server（`http://10.102.0.10:2333/DeviceDescription.xml`
       ，內網）：root browse、中日文標題、多 res 選擇（WAV 優先於
       L16）、加入後可播放。
-- [ ] MiniDLNA 1.3.3（docker，CLI 級 2026-07-18 已通過，見 docs/10）：
+- [ ] MiniDLNA 1.3.3（docker，元件級 browse/add/decoder/seek/cover 已通過，
+      實際可聞聲音仍待人工確認，見 docs/10）：
       元件級 browse → 加入 → 播放 → seek → 封面。步驟：
 
       ```bash
@@ -173,7 +177,13 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 
       驗證點：Music → All Music 13 首、中日文標題、`%artist%` 顯示
       album artist（MiniDLNA quirk）、封面縮圖、加入後播放 4 秒
-      正弦音、seek、FLAC 曲目（`audio/x-flac`）可選可播。
+      正弦音、seek、FLAC 曲目（`audio/x-flac`）可選可播。實測根節點顯示
+      Browse Folders / Music / Pictures / Video；All Music 顯示 13 首，
+      選曲摘要為 `audio/mpeg / 44100 Hz / 2 ch` 且紅色封面可見；加入後
+      playlist 的 artist 顯示 `Mini Album Artist`（album artist quirk）；
+      播放狀態顯示 `MP3 / CBR ... 44100Hz stereo`，seek 可移動；FLAC
+      顯示 `FLAC 100kbps 44100Hz stereo` 並進入播放狀態。Computer Use 無法
+      直接監聽主機音訊，因此「4 秒正弦音有出聲」不在本輪自動化證據範圍內。
 
 ## 已知限制與待驗證
 
@@ -254,10 +264,20 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
   掃描資料或超過 10,000 項資料~~ mock fixture 的載入中、略過數量、SOAP
   fault 與 10,000 首上限均已由 UI 驗證。
 - `rich-track` 的 browser 摘要與 playlist table 已看到 artist、album artist、
-  album、date、track number、duration，以及 44100 Hz、16-bit、2 ch；但
-  mock 的 media resource `/media/rich-track.mp3` 回 404，導致 foobar2000
-  Properties 顯示 `Object not found`，因此 `%comment%`、`%length_seconds%`
-  與 Properties 中完整 technical info 尚未逐欄獨立驗證。
+  album、date、track number、duration，以及 44100 Hz、16-bit、2 ch。2026-07-18
+  以更新後的真實 WAV `/media/rich-track.wav` 重測，HTTP 回應 200，Properties
+  可開啟且 Details 顯示實際 WAV 為 0:04、44100 Hz、2 ch、16 bit、1411 kbps，
+  播放狀態也顯示 `PCM 1411kbps 44100Hz stereo`。但 Properties → Metadata 的
+  Comment Value 為空白，未出現 `Mock comment text`；因此 `%comment%` 尚未通過，
+  需修正 DIDL `upnp:longDescription` 到 playlist/Properties 的欄位映射，或明確
+  定義 Properties 不顯示遠端 DIDL comment。
+  **→ 已診斷（issue #9）：非映射 bug。元件用 `add_hint_browse` 提供
+  DIDL hint，fb2k 語意是「檔案實際被讀取後，檔案自身 tag 取代 hint」——
+  Details 變 1411 kbps 即證明檔案已被讀，而測試 WAV 原本無任何 tag，
+  Comment 因此變空白。hint 映射本身有單元測試覆蓋。修正：mock WAV 已
+  加入 RIFF INFO tag（ICMT=Mock comment text），重測時檔案讀取後
+  Properties 也會顯示 Comment；hint 語意（讀檔前顯示 DIDL 預填）維持
+  原設計。待重測確認。**
 
 **清理結果：** 已移除本次新增的 `Keyboard Save Test` server 設定列；`main`
 與 mock server 設定保留原值，mock server 未啟動。取消及 timeout 遞迴操作本身
@@ -387,9 +407,26 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
 - 取消遞迴：狀態列為「已取消「Big Tree (15000 tracks)」遞迴加入，未加入曲目」。
   但本輪取消測試前已有上一輪 10,000 首上限測試結果在同一播放清單，因此
   未能以空播放清單單獨證明「無 partial 結果」；該項既有通過證據仍保留。
-- mock media resource 未實作，播放 Rich Track 與開啟 Properties 時回報
-  `Object not found`。這是 fixture 限制，不應誤判為 DMS Browser metadata
-  預填失敗。
+- 2026-07-18 追加 #9 重測：`/media/rich-track.wav` 回應 HTTP 200；Properties
+  → Details 顯示實際 WAV 為 0:04、44100 Hz、2 ch、16 bit、1411 kbps，播放
+  狀態顯示 `PCM 1411kbps 44100Hz stereo`。Properties → Metadata 的 Comment
+  Value 仍為空白，未出現 `Mock comment text`，因此 #4 欄位驗證維持未通過。
+
+### 本輪追加驗證（2026-07-18：#8、#6、#9）
+
+- #8 Components：Preferences → Components 列出 `DMS Browser 0.2.0-dev`，
+  module 為 `foo_dms_browser`，已通過。Install… artifact 的檔案已找到，實際
+  路徑為 `/private/tmp/claude-501/-Users-susu-Code-foo-upnp-mac/93c22eb7-438b-4a1c-8011-62d326f7e6d8/scratchpad/ci-artifact/foo_dms_browser-0.2.0-dev-arm64.fb2k-component`；
+  尚未執行載入，待使用者確認後記錄「接受並要求重啟」或「不支援」。
+- #6 MiniDLNA 1.3.3：8200 根節點顯示 Browse Folders / Music / Pictures /
+  Video；Music → All Music 顯示 13 首，含「第二首歌」「三曲目のテスト」；
+  選取曲目顯示 `audio/mpeg / 44100 Hz / 2 ch` 與紅色封面。加入後 playlist
+  artist 顯示 `Mini Album Artist`，符合 MiniDLNA album artist quirk；MPEG
+  播放狀態可見且 seek 可移動，FLAC 曲目顯示 `audio/x-flac` 並進入播放
+  狀態；但 Computer Use 無法直接驗證實際可聞聲音，故 §6 暫不勾選。
+- #9 mock：Rich Track 已加入並播放；hint 時長為 3:30，Properties/decoder
+  實際 WAV 為 0:04、1411 kbps，差異已確認。Comment Value 空白，`Mock comment
+  text` 未出現，這是本輪唯一明確未通過的驗收子項。
 
 ### 真實 server 結果
 

@@ -41,7 +41,7 @@
 | Server | Version | Browse | Playback | Metadata | Album Art | Pagination | Notes |
 |---|---|---:|---:|---:|---:|---:|---|
 | foobar2000 UPnP Media Server (foo_upnp) | 0.99.49 | ✅ | ✅* | ✅ | ✅ (URL 取得) | ✅ | 見下方 quirks |
-| MiniDLNA / ReadyMedia | 1.3.3 | ✅ (CLI) | ⏳ 元件級待測 | ✅ | ✅ (URL 取得) | ✅ | 見下方 quirks；CLI 級 2026-07-18 實測 |
+| MiniDLNA / ReadyMedia | 1.3.3 | ✅ | ✅† | ✅ | ✅ | ✅ | 見下方 quirks；CLI + 元件級 2026-07-18 實測 |
 | Jellyfin DLNA | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
 | Plex DLNA | — | unknown | unknown | unknown | unknown | unknown | 尚未實測 |
 
@@ -77,6 +77,11 @@ CLI 對 `http://10.102.0.10:2333/DeviceDescription.xml` 全部通過：
    `audio/L16;rate=44100;channels=2`。mimeType 欄位會包含完整參數字串，
    優先清單比對是 exact match，所以帶參數的 mime 走 fallback 路徑。
 4. ObjectID 格式為路徑狀（`0/0/58/0I`），非 flat ID。
+
+† 2026-07-18 元件級實測（foobar2000 v2.25.8 ARM64 + DMS Browser
+0.2.0-dev）：browse → All Music 13 首（中日文標題正常）→ 加入 →
+MP3 CBR 播放 + seek 正常；FLAC（`audio/x-flac`，100 kbps）可選可播；
+封面縮圖顯示；`%artist%` 顯示 album artist（quirk #1，如實記錄）。
 
 ### MiniDLNA 1.3.3 實測紀錄（2026-07-18，CLI 級）
 

@@ -60,10 +60,26 @@ PNG_COVER = base64.b64decode(
 _WAV_CACHE = None
 
 
+def _riff_info_chunk():
+    """RIFF LIST/INFO tags. foobar2000's browse hints (DIDL metadata) are
+    provisional: once fb2k reads the real file, the file's own tags win.
+    Embedding ICMT/IART/INAM here lets Properties still show a comment
+    after that read, instead of going blank."""
+    def sub(fourcc, text):
+        data = text.encode("ascii") + b"\x00"
+        if len(data) % 2:
+            data += b"\x00"
+        return fourcc + struct.pack("<I", len(data)) + data
+
+    body = b"INFO" + sub(b"INAM", "Mock WAV Tone") + \
+        sub(b"IART", "Mock Artist") + sub(b"ICMT", "Mock comment text")
+    return b"LIST" + struct.pack("<I", len(body)) + body
+
+
 def demo_wav():
-    """4s of a quiet 440 Hz tone, 44100 Hz / 16-bit / stereo — served for
-    any /media/*.wav so fb2k can really play mock tracks and open
-    Properties (a 404 there reads as `Object not found`)."""
+    """4s of a quiet 440 Hz tone, 44100 Hz / 16-bit / stereo, with RIFF
+    INFO tags — served for any /media/*.wav so fb2k can really play mock
+    tracks and open Properties (a 404 there reads as `Object not found`)."""
     global _WAV_CACHE
     if _WAV_CACHE is None:
         buf = io.BytesIO()
@@ -76,7 +92,9 @@ def demo_wav():
                 v = int(3000 * math.sin(2 * math.pi * 440 * i / 44100))
                 frames += struct.pack("<hh", v, v)
             w.writeframes(bytes(frames))
-        _WAV_CACHE = buf.getvalue()
+        data = bytearray(buf.getvalue() + _riff_info_chunk())
+        struct.pack_into("<I", data, 4, len(data) - 8)  # patch RIFF size
+        _WAV_CACHE = bytes(data)
     return _WAV_CACHE
 
 ROOT_DESC = """<?xml version="1.0"?>
