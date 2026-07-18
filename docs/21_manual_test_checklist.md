@@ -243,6 +243,10 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
   才能繼續操作。使用者手動重啟後重測，關閉後主視窗可立即取得，且 View →
   DMS Browser 可再次開啟。此問題目前應標為間歇性 stale window/controller
   狀態，仍建議保留回歸測試，但不足以判定為穩定元件 lifecycle blocker。
+  **→ 收案（issue #10，2026-07-18）：乾淨 session（單一元件複本）五輪
+  open→close→refocus→reopen 全過，console 生命週期訊息成對且順序正確；
+  先前 timeout 事件歸因於 name clash 污染與外部控制工具狀態，非穩定
+  元件缺陷。診斷 log 保留在 build 中，若再現可直接對照。**
 - URL 直接鍵盤編輯並立即關閉、以及切換 Preferences 頁面保存均已通過；
   但在 URL 欄位仍有焦點時關閉 Preferences，仍可能觸發上述視窗不可取得
   的問題，這是 UI 生命週期問題，不再是 URL 欄位只保存 `http://`。
@@ -442,6 +446,27 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   `DMS Browser: standalone window shown` / `closed` 訊息，表示診斷 log build
   也未成功載入。
 
+### #10、#9 追加重測（2026-07-18）
+
+- #10 五輪視窗回歸：在同一個 foobar2000 session 連續完成 5 輪
+  `View → DMS Browser → 紅色 Close → 主視窗取回 → View 重開`。每輪關閉後
+  主視窗均可立即取得，且可繼續操作 View 選單，未重現 `timeoutReached`。Console
+  證據為：第 1 輪 `16:29:06.819 created/shown`、`16:29:11.980 closed`；
+  第 2 至第 5 輪各出現一組 `standalone window shown` 與
+  `standalone window closed (ordered out, controller retained)`，共 5 組，
+  順序正確。視窗可正常重開，未觀察到大小變動；位置未以數值座標獨立核對。
+  依功能結果 #10 通過，原先的 Computer Use stale window 問題本輪未重現。
+  同一份 Console 仍保留啟動時的舊訊息
+  `Name clash with built-in component, please uninstall`，應與 lifecycle
+  結果分開追蹤，不宣稱元件安裝狀態已完全清理。
+- #9 MP3 補測：`docker start minidlna-test` 後，MiniDLNA `Music → All Music`
+  顯示 13 首；加入 `First Song`，狀態列顯示「已加入 1 首到目前播放清單」。
+  播放中底部顯示 `MP3 / CBR 134kbps 44100Hz stereo` 且進度條前進；
+  Properties → Metadata 的 Comment 顯示 `minidlna test`，通過 MP3 comment
+  路徑。實際喇叭出聲仍未由 Computer Use 獨立確認；測後已停止
+  `minidlna-test` 容器。這不改變前述遠端 WAV 的 `Mock comment text` 仍為空白
+  的結果。
+
 ### 真實 server 結果
 
 - `播放列表` 展開後顯示 309 個直接項目；遞迴掃描最終完成並顯示：
@@ -521,3 +546,12 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
 - 顯示 `minidlna test` → comment 顯示鏈路正常，WAV 為 fb2k 解碼器
   特例，#9 以文件定義收案。
 - 仍空白 → mac 版 hint/檔案資訊路徑有更深問題，另行調查。
+
+**追加結果（2026-07-18）：** MP3 `First Song` 的 Comment 實際顯示
+`minidlna test`，因此 MP3 路徑通過；遠端 WAV 的 Comment 空白仍保留為另一個
+待釐清問題。#10 五輪 lifecycle 亦已完成，結果見上方「#10、#9 追加重測」。
+
+**→ #9 收案（2026-07-18）：** comment 顯示鏈路以主流 MP3+ID3 路徑驗證
+通過；「遠端 WAV 的 RIFF INFO comment 不顯示」記錄為 foobar2000 mac
+的解碼器層限制（hint 映射本身由 test_hint_fields.cpp 覆蓋，且 WAV 實體
+tag 已確認存在）。
