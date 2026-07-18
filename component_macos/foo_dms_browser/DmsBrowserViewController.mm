@@ -525,7 +525,9 @@ struct RecursiveAddJob {
                                                 action:@selector(onAddClicked:)
                                          keyEquivalent:@""];
         addDirect.target = self;
-        addDirect.enabled = node.state == DmsNodeStateLoaded && !_recursiveAddJob;
+        // Loaded state is no longer required: unloaded containers fetch
+        // their direct children on demand (issue #11).
+        addDirect.enabled = !_recursiveAddJob;
         NSMenuItem* addRecursive = [menu addItemWithTitle:@"遞迴加入所有曲目"
                                                    action:@selector(onAddRecursiveClicked:)
                                             keyEquivalent:@""];
@@ -547,12 +549,64 @@ struct RecursiveAddJob {
         [self addObjects:std::move(single) sourceTitle:node.title];
         return;
     }
+    if (![node isContainer]) return;
     // Container: its direct child items, single level (ADR-016).
-    std::vector<upnp::UpnpObject> objects;
-    for (DmsTreeNode* child in node.children) {
-        if (child.kind == DmsNodeKindItem) objects.push_back(child.object);
+    if (node.state == DmsNodeStateLoaded) {
+        std::vector<upnp::UpnpObject> objects;
+        for (DmsTreeNode* child in node.children) {
+            if (child.kind == DmsNodeKindItem) objects.push_back(child.object);
+        }
+        [self addObjects:std::move(objects) sourceTitle:node.title];
+        return;
     }
-    [self addObjects:std::move(objects) sourceTitle:node.title];
+    // Never-expanded container (issue #11): fetch its direct children on
+    // demand instead of reading the not-yet-loaded tree.
+    [self startDirectAddForNode:node];
+}
+
+- (void)startDirectAddForNode:(DmsTreeNode*)node {
+    if (_session == nullptr || _recursiveAddJob != nullptr) return;
+    auto session = _session;
+    auto job = std::make_shared<RecursiveAddJob>();
+    _recursiveAddJob = job;
+    _cancelAddButton.hidden = NO;
+    const NSInteger generation = _generation;
+    const std::string objectId = node.objectId.UTF8String ?: "0";
+    NSString* sourceTitle = [node.title copy] ?: @"";
+    _statusLabel.stringValue = [NSString
+        stringWithFormat:@"正在取得「%@」的直接子項曲目…", sourceTitle];
+
+    dispatch_async(workerQueue(), ^{
+        component::PagedBrowseResult page;
+        NSString* errorText = nil;
+        try {
+            page = session->fetchChildren(objectId);
+        } catch (...) {
+            errorText = describeBrowseError();
+            FB2K_console_formatter()
+                << "DMS Browser: direct add objectId=\"" << objectId.c_str()
+                << "\" failed, server=\"" << session->rootDescUrl().c_str()
+                << "\": " << errorText.UTF8String;
+        }
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (generation != _generation || _recursiveAddJob != job) return;
+            _recursiveAddJob.reset();
+            _cancelAddButton.hidden = YES;
+            if (errorText != nil) {
+                _statusLabel.stringValue = errorText;
+                return;
+            }
+            if (job->cancelled.load()) {
+                _statusLabel.stringValue = [NSString
+                    stringWithFormat:@"已取消「%@」加入，未加入曲目", sourceTitle];
+                return;
+            }
+            // addToActivePlaylist skips child containers itself and
+            // counts unplayable items, so the status line matches the
+            // expanded-container path.
+            [self addObjects:std::move(page.objects) sourceTitle:sourceTitle];
+        });
+    });
 }
 
 - (void)onAddRecursiveClicked:(id)sender {
