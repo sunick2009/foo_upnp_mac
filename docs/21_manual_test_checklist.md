@@ -31,6 +31,8 @@
 > 主視窗的 timeout；使用者手動重啟後重測，關閉與再次開啟均正常。但本輪
 > artifact Install… 測試結束後關閉 Preferences 又重現 `timeoutReached`，顯示
 > 仍是間歇性 stale window/controller 狀態，不能定性為已根治。
+> **（已取代）** 後續查明該現象源於 name clash 污染；清理後乾淨 session
+> 五輪回歸全過，#10 已收案（見「#10、#9 追加重測」）。
 **前置：** component 已安裝（`~/Library/foobar2000-v2/user-components/
 foo_dms_browser.component`）並重啟 foobar2000。
 自動化已涵蓋的部分（adapter 邏輯、載入不崩潰）不在此清單。
@@ -444,6 +446,8 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   artist 顯示 `Mini Album Artist`，符合 MiniDLNA album artist quirk；MPEG
   播放狀態可見且 seek 可移動，FLAC 曲目顯示 `audio/x-flac` 並進入播放
   狀態；但 Computer Use 無法直接驗證實際可聞聲音，故 §6 暫不勾選。
+  （#6 已依 decoder 播放狀態＋seek 證據收案；聞聲確認屬工具限制的
+  殘餘小項，勾選與否不影響 issue 結論。）
 - #9 mock：Rich Track 已加入並播放；hint 時長為 3:30，Properties/decoder
   實際 WAV 為 0:04、1411 kbps，差異已確認。以 `strings` 確認 WAV 實體內含
   `Mock comment text`，但 Properties → Metadata Comment Value 仍空白，因此
@@ -497,9 +501,11 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
   artifact Install… 後關閉 Preferences 時，顯示名稱與 bundle identifier 均再次
   回報 `timeoutReached`，故此項仍應保留為間歇性生命週期問題，待 #10 診斷 build
   五輪回歸。
+  **（已取代）** 五輪回歸已於乾淨 session 完成且全過，#10 已收案。
 - 本輪關閉 Preferences 後顯示名稱與 bundle identifier 均連續回報
   `timeoutReached`；恢復程序後開始 #10 第 1 輪，DMS Browser 開啟成功，但關閉後
   再次觸發相同 timeout。故 #10 第 1 輪失敗，其餘四輪未執行。
+  **（已取代）** 該輪受 name clash 污染；清理後五輪回歸全過，#10 已收案。
 - DMS Browser 重開後 screenshot 尺寸維持 680×488；Computer Use 可取得尺寸，
   但無法提供螢幕座標，因此位置未能以數值獨立證實。功能性關閉與重開已通過，
   但步驟要求的「純手動」復核仍未由本輪 Computer Use 完整取代。
