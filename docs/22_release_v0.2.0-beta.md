@@ -15,6 +15,13 @@ CI 對每個 artifact 執行煙霧測試：bundle 結構、`Info.plist` lint、
 arm64 架構、`_foobar2000_get_interface` 匯出、
 `codesign --verify --deep --strict`。
 
+格式與生態一致性（2026-07-18 查證）：macOS 第三方元件（如
+[JendaT mac suite](https://github.com/JendaT/fb2k-components-mac-suite)、
+[官方 mac components repo](https://www.foobar2000.org/components/system/mac)）
+均以 `.fb2k-component`（zip）發佈，安裝方式為雙擊 / Preferences →
+Components → Install… / 手動放入 `user-components/`，系統需求同為
+macOS 11+——與本專案的格式決定一致。最終仍以 clean-install 實測為準。
+
 ## 安裝
 
 1. 下載 `.fb2k-component` 與 `.sha256`，`shasum -a 256 -c <檔名>.sha256`。
