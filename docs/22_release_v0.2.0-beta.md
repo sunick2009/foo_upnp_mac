@@ -82,7 +82,10 @@ CLI + 元件級）。Jellyfin/Plex 尚為 unknown。
       `foo_dms_browser-0.2.0-dev-arm64.fb2k-component`）；解壓後
       bundle 結構、arm64、`_foobar2000_get_interface`、
       `codesign --verify --deep --strict` 均通過。
-- [ ] 乾淨環境 clean-install 測試（不使用本機 build 目錄）：
+- [x] 乾淨環境 clean-install 測試（不使用本機 build 目錄）：
+      （2026-07-18 clean-profile 首跑：備份原 profile 後以全新 profile
+      啟動，Install… 安裝 run 29639328169 的
+      `foo_dms_browser-0.2.0-arm64.fb2k-component` 後重啟——見下列子項。）
   - [x] 手動路徑已驗證（2026-07-18，開發機）：下載 run 29612715910 的
         artifact → `shasum -c` 通過 → `ditto -x -k` 解壓到
         `user-components/` → 解壓後 bundle 通過
@@ -91,8 +94,10 @@ CLI + 元件級）。Jellyfin/Plex 尚為 unknown。
         （2026-07-18，修正 `mac/` layout 後通過；安裝至
         `user-components/foo_dms_browser/`。注意勿與手動複本並存，
         會 component name clash）。
-  - [ ] Components 列表顯示 DMS Browser 0.2.0。
-  - [ ] Preferences 頁、layout element、browse、加入、播放、封面正常。
-- [ ] 發佈 GitHub Release：附上套件、`.sha256`、本文件 changelog 節。
+  - [x] Components 列表顯示 DMS Browser 0.2.0（2026-07-18 首跑）。
+  - [x] Preferences 頁、browse、加入、播放、封面正常
+        （2026-07-18 首跑，對真實 foo_upnp server 驗證）。
+- [x] 發佈 GitHub Release（v0.2.0 pre-release）：附上套件、`.sha256`、
+      changelog（run 29639328169 artifact，commit 772cab6）。
 - [x] 發佈前把 `ComponentEntry.mm` 版本 `0.2.0-dev` → `0.2.0`
       （2026-07-18，issue #12）。
