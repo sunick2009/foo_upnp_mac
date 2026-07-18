@@ -324,6 +324,43 @@ repo mock server `http://127.0.0.1:8200/rootDesc.xml`。
 
 測畢將結果更新至上方對應 checkbox 與追蹤問題，或交由 agent 對帳。
 
+## 視窗生命週期回歸測試（issue #10 定義，待執行）
+
+設計說明：獨立視窗為刻意的 singleton——建立一次、關閉僅 orderOut
+（`releasedWhenClosed=NO`）、重開重用同一 controller，不會累積 stale
+controller；layout 內的 ui_element 是獨立 instance，不受獨立視窗影響。
+含診斷 log 的 build 起，每次建立/顯示/關閉都會寫 fb2k console
+（`DMS Browser: standalone window created / shown / closed`）。
+
+重複下列序列 **5 次**（乾淨啟動的 foobar2000 session）：
+
+1. View → DMS Browser 開啟獨立視窗 → console 出現 `shown`
+   （首次另有 `created`）。
+2. 點紅色 Close 按鈕關閉 → console 出現 `closed (ordered out,
+   controller retained)`。
+3. 點主視窗任意處 → 主視窗可正常取得焦點、選單可操作。
+4. View → DMS Browser 重開 → 視窗回復、位置大小保留、
+   server/樹狀態仍在（同一 controller）。
+5. 若 layout 中有 DMS Browser element，確認它全程不受影響。
+
+結果判定：5 輪皆正常 → #10 定性為外部控制工具限制，關閉；
+任一輪主視窗失去回應 → 記錄該輪 console log（含上述生命週期訊息的
+順序）與操作，回報 #10。
+
+## MiniDLNA 元件級 + #9 metadata 驗證（本輪可一起做）
+
+MiniDLNA 已映射到 port 8200（`docker start minidlna-test`），fb2k 既有
+mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
+
+1. §6 MiniDLNA 項目：Music → All Music 13 首、中日文標題、
+   `%artist%` = album artist（quirk）、封面、加入後播放 4 秒正弦音、
+   seek、FLAC（`audio/x-flac`）。
+2. **#9**：改跑 repo mock（port 8200 先停 MiniDLNA 或換 port）加入
+   `Rich Track（全欄位）`（現在是真實 WAV，Properties 可開）：
+   - Properties / title formatting 確認 `%comment%` = Mock comment text。
+   - technical info 確認 bitrate 欄位（hint 176400 bps；播放後 decoder
+     會回報實際 WAV bitrate 1411 kbps——兩者差異即 hint vs 實測來源）。
+
 ## 本輪 E2E 測試紀錄（2026-07-18）
 
 ### Mock server 結果
