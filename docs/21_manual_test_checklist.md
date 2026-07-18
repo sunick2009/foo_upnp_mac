@@ -109,7 +109,7 @@ Mock server 測試用 fixture（2026-07-17 擴充）：
 - [x] 加入的曲目可播放（真實 server 與 mock 的 WAV fixture；
       `music`/`bigtree` 的假 URL 播放失敗屬預期）。
 - [x] 播放中 seek 正常（server 支援 range request 時；
-      2026-07-17 foo_upnp、2026-07-18 MiniDLNA）。
+      2026-07-17 foo_upnp、2026-07-18 MiniDLNA MP3——格式範圍見 §6）。
 
 ## 5. 錯誤情境（ADR-014）
 
