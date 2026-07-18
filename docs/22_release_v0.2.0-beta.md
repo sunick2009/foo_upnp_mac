@@ -103,9 +103,10 @@ CLI + 元件級）。Jellyfin/Plex 尚為 unknown。
   - [x] Components 列表顯示 DMS Browser 0.2.0（2026-07-18 首跑）。
   - [x] Preferences 頁、browse、加入、播放、封面正常
         （2026-07-18 首跑，對真實 foo_upnp server 驗證）。
-  - [ ] layout element 於 0.2.0 artifact 全新安裝下加入 layout
-        （同碼 build 已於 2026-07-17/18 驗證 layout element；
-        0.2.0 首跑未包含此項，補測後勾選）。
+  - [x] layout element 於 0.2.0 artifact 安裝下正常
+        （2026-07-18 補測：release artifact 換裝至日常 profile 後，
+        Components 顯示 0.2.0，layout 中的 DMS Browser element 正常
+        顯示；同碼 build 先前已於 2026-07-17/18 驗證）。
 - [x] 發佈 GitHub Release（v0.2.0 pre-release）：附上套件、`.sha256`、
       changelog（run 29639328169 artifact，commit 772cab6）。
 - [x] 發佈前把 `ComponentEntry.mm` 版本 `0.2.0-dev` → `0.2.0`
