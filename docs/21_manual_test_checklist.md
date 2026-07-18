@@ -508,3 +508,11 @@ mock 條目（`http://127.0.0.1:8200/rootDesc.xml`）直接指向它。
 任一專輯）直接右鍵「加入直接子項曲目」——預期：狀態列先顯示
 「正在取得「X」的直接子項曲目…」，隨後顯示與展開後路徑相同的
 「已加入 N 首…（略過 M…）」；不再出現「沒有可播放的項目」。
+
+### #9 決定性補測（30 秒）：MP3+ID3 路徑
+
+`docker start minidlna-test` → 加入任一 MiniDLNA MP3 → 播放 → Properties
+→ Metadata。測試庫 MP3 內嵌 ID3 comment tag（`minidlna test`）：
+- 顯示 `minidlna test` → comment 顯示鏈路正常，WAV 為 fb2k 解碼器
+  特例，#9 以文件定義收案。
+- 仍空白 → mac 版 hint/檔案資訊路徑有更深問題，另行調查。
