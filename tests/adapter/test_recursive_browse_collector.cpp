@@ -159,3 +159,24 @@ TEST_CASE("recursive collector propagates fetch errors", "[recursive]") {
             "0"),
         std::runtime_error);
 }
+
+TEST_CASE("recursive collector honours a fetch cancelled mid-pagination",
+          "[recursive]") {
+    // The cancel can land inside the pager while the LAST pending
+    // container is being fetched: no further loop iteration runs the
+    // collector's own cancellation check, so the flag must come from
+    // the page itself or the partial collection would get added.
+    const auto fetch = [](const std::string& objectId) {
+        PagedBrowseResult page;
+        if (objectId == "root") {
+            page.objects = {makeItem("kept"), makeContainer("last")};
+        } else {
+            // Cancelled while paging through the final container.
+            page.objects = {makeItem("partial")};
+            page.cancelled = true;
+        }
+        return page;
+    };
+    const auto result = collectRecursiveChildren(fetch, "root");
+    CHECK(result.cancelled);
+}
